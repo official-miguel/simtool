@@ -1,0 +1,904 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <link rel="manifest" href="manifest.json">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Trick world</title>
+  <style>
+    /* 1. Global Full-Screen Setup */
+    html, body { 
+        height: 100%; 
+        margin: 0; 
+        padding: 0; 
+        overflow: hidden; /* Prevents scrollbars */
+        background: var(--bg);
+    }
+    :root{--bg:#071425;--card:#071122;--muted:#9aa4b2;--accent:#327acd;--glass: rgba(255,255,255,0.03)}
+    *{box-sizing:border-box;font-family:Inter,system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial}
+    
+    /* 2. Body container for layout (full height/width) */
+    body{
+        color:#e6eef6;
+        display:flex;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
+    }
+    
+    /* 3. Main App Wrapper (.phone) is now full-screen by default */
+    .phone{
+        width: 100vw;
+        height: 100vh;
+        max-width: none;
+        border-radius: 0;
+        padding: 0; /* Remove external padding */
+        box-shadow: none; /* Remove phone shadow */
+        background: transparent; 
+        position:relative;
+        display:flex;
+        flex-direction: column;
+        box-sizing:border-box;
+    }
+    
+    /* 4. Internal Layout and Component Styles */
+    .landing-content {
+        /* Add back padding/centering for the landing page icons */
+        width: 100%;
+        max-width: 420px;
+        margin: 0 auto;
+        padding: 20px 10px;
+    }
+    .home{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .icon{background:var(--glass);padding:14px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer}
+    .icon .label{margin-top:8px;font-size:13px;color:var(--muted)}
+    
+    /* 5. Screen container now takes full height */
+    .screen{
+        background:var(--bg);
+        padding:0; /* Manage padding inside pages */
+        min-height:100%;
+        flex: 1; 
+        overflow-y: auto; /* Allow scrolling for content overflow */
+        position: relative;
+    }
+    .wallpaper-picker{display:flex;gap:8px;align-items:center;padding:8px}
+    /* Removed .wp-thumb styles as they are no longer needed */
+    .navbar{display:flex;align-items:center;gap:10px;padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.03)}
+    .back{width:36px;height:36px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.03);display:flex;align-items:center;justify-content:center;cursor:pointer}
+    .nav-title{font-weight:600}
+    .list{padding:12px}
+    .list-item{padding:12px;border-radius:8px;background:rgba(255,255,255,0.02);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+    .clickable{color:var(--accent);cursor:pointer}
+    .inbox-list{display:flex;flex-direction:column;padding:8px;gap:8px}
+    .chat{padding:14px;border-radius:12px;background:rgba(255,255,255,0.02);margin:8px 0}
+    .msg{padding:10px;border-radius:10px;max-width:85%}
+    .from-me{align-self:flex-end;background:linear-gradient(180deg, rgba(50,205,50,0.15), rgba(50,205,50,0.10))}
+    .from-them{align-self:flex-start;background:rgba(255,255,255,0.03)}
+    .row{display:flex;gap:8px;padding:12px}
+    input[type=text],input[type=number],input[type=password]{flex:1;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:rgba(255,255,255,0.01);color:inherit}
+    .btn{padding:10px 12px;border-radius:8px;border:none;background:var(--accent);color:#021;cursor:pointer}
+    .btn.secondary{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted)}
+   .top-notif{
+ position: fixed;
+ left: 50%;
+ top: 18px;
+ transform: translateX(-50%);
+ transition: all .35s ease;
+ background: linear-gradient(90deg,#032 0%, #054 100%);
+ padding: 12px 16px;
+ border-radius: 10px;
+ box-shadow: 0 6px 20px rgba(2,6,23,0.6);
+ z-index:1000;
+ cursor: pointer;
+ opacity: 0;          
+ pointer-events: none; 
+}
+.top-notif.show{
+ opacity: 1;
+ pointer-events: auto; 
+}
+
+    
+    .modal{position:fixed;left:0;top:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;background:rgba(2,6,23,0.55);visibility:hidden;opacity:0;transition:opacity .2s, visibility .2s;z-index:40}
+    .modal.show{visibility:visible;opacity:1}
+    .modal-card{background:#021222;padding:18px;border-radius:12px;min-width:280px;text-align:center}
+    .modal-card .choices{display:flex;gap:10px;justify-content:center;margin-top:12px}
+    .small{font-size:20px;color: white;}
+    .hidden{display:none}
+    .muted{color:var(--muted)}
+    .note{font-size:12px;color:var(--muted);margin-top:8px}
+    .balance{font-weight:700}
+    .page{box-sizing:border-box}
+    .mpesa-link{color:#0b69ff !important;text-decoration:underline !important}
+    
+    /* Profile picture style */
+    .profile-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        margin-right: 8px;
+        background:grey; 
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0; 
+    }
+
+    /* Additional style for code input fields */
+    .code-input-group {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+    .code-input-group input {
+        width: 50px;
+        text-align: center;
+        text-transform: uppercase;
+        font-weight: bold;
+    }
+
+    /* Style for the permanently visible prefix on the icon */
+    .prefix-display {
+        font-size: 14px;
+        font-weight: 700;
+        margin-bottom: 6px;
+        letter-spacing: 1px;
+    }
+    .prefix-display span {
+        padding: 0 1px;
+    }
+  </style>
+
+  <style>
+    #receiverHome, #conversationBaby {
+        background: #131316; 
+        padding: 0; 
+        min-height: 100%;
+        flex: 1;
+    }
+    #conversationBaby .footer{
+      position: fixed; 
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000; /* Ensure it stays on top of other content */
+    
+    /* Layout: Uses Flexbox for easy left/right alignment */
+    display: flex;
+    justify-content: space-between; /* Pushes content to the edges */
+    align-items: center;
+    
+    /* Appearance: Mimics the subtle mobile UI style */
+    background-color:lightgrey; /* Light gray background */
+    padding: 8px 15px;
+    font-size: 13px; /* Small, subtle text */
+    color: #555; /* Gray text color */
+    font-family: Arial, sans-serif; /* Common system font */
+    border-top: 1px solid #ddd; /* Separator line */
+}
+
+/* Style for the actionable link */
+.dont-reply-footer a {
+    color: #007aff; /* Standard mobile UI blue */
+    text-decoration: none;
+    font-weight: 500;
+}
+
+    
+    #conversationBaby .navbar {
+        background: #131316; 
+        border-bottom: none; 
+        padding: 12px 10px;
+              /* Positioning: Sticks to the bottom of the viewport */
+    
+        }
+    
+    .msg.from-them {
+        background: #202124; 
+        border-radius: 6px; 
+        padding: 12px; 
+
+    }
+    #chatWindow {
+        padding: 10px 14px 20px 14px !important; 
+        max-height: calc(100vh - 120px); 
+        min-height: 440px;
+        background: transparent !important; 
+        flex: 1; 
+    }
+    #receiverHome > div {
+        padding: 0 !important;
+    }
+    #receiverHome .list-item {
+        background: #131316; 
+        border-radius: 0; 
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05); 
+        margin-bottom: 0; 
+        padding: 16px 14px; 
+    }
+    #conversationBaby .navbar {
+        gap: 0;
+    }
+    #conversationBaby .navbar .nav-title {
+        display: flex;
+        align-items: center;
+        gap: 10px; 
+    }
+
+  
+  </style>
+  </head>
+<body>
+  <div class="phone" id="app">
+    <div id="headerRow" class="landing-content" >
+           <div style="font-size:13px;color:var(--muted)"></div>
+    </div>
+
+    
+
+    <div class="landing-content" id="mainIcons" style="margin-top:10px; padding-top:0;">
+      <div class="home">
+        <div class="icon" id="senderIcon" title="Send">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div class="label">Send</div>
+        </div>
+        <div class="icon" id="receiverIcon" title="Receiver">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div class="label">Messages</div>
+        </div>
+        
+        <div class="icon" id="codeIcon" title="Code Setup">
+            <div class="prefix-display">
+                <span id="displayCode1">T</span><span id="displayCode2">K</span><span id="displayCode3">A</span>
+            </div>
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><path d="M12 21c-4.97 0-9-4.03-9-9s4.03-9 9-9 9 4.03 9 9-4.03 9-9 9z" stroke="white" stroke-width="1.2"/><path d="M12 8v4l3 3" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div class="label">Code Prefix</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="top-notif" id="topNotif">New message received</div>
+    <div class="screen" id="screen">
+
+      <div id="landing" class="page">
+        <div style="padding:18px;text-align:center">
+          <h3>MIGUEL'S WORLD</h3>
+          <p class="muted"></p>
+        </div>
+      </div>
+
+      <div id="senderHome" class="page hidden">
+        <div class="navbar"><div class="back" id="senderBack">←</div><div class="nav-title">M-PESA</div></div>
+        <div class="list">
+          <div class="list-item"><div>Safaricom+ <span class="muted"></span></div></div>
+          <div class="list-item " id="openB">M-PESA</div>
+        </div>
+      </div>
+
+      <div id="senderBpage" class="page hidden">
+        <div class="navbar"><div class="back" id="senderBBack">←</div><div class="nav-title">M-PESA</div></div>
+        <div class="list">
+          <div class="list-item " id="itemC">Send Money</div>
+          <div class="list-item">Withdraw Cash</div>
+          <div class="list-item">Buy Airtime</div>
+          <div class="list-item">Loans and Savings</div>
+          <div class="list-item " id="itemG">Lipa na M-PESA</div>
+          <div class="list-item">My Account</div>
+        </div>
+      </div>
+
+      <div id="enterPhone" class="page hidden">
+        <div class="navbar"><div class="back" id="phoneBack">←</div><div class="nav-title">Send Money</div></div>
+        <div style="padding:12px">
+          <div class="small">(primary) Enter phone no.</div>
+          <div class="row"><input id="phoneInput" type="text"/><button class="btn" id="phoneNext">Send</button></div>
+           </div>
+      </div>
+
+      <div id="enterAmount" class="page hidden">
+        <div class="navbar"><div class="back" id="amountBack">←</div><div class="nav-title">(primary) Enter Amount</div></div>
+        <div style="padding:12px">
+          <div class="row"><input id="amountInput" type="number" ><button class="btn" id="amountNext">Send</button></div>
+          
+        </div>
+      </div>
+
+      <div id="enterPin" class="page hidden">
+        <div class="navbar"><div class="back" id="pinBack">←</div><div class="nav-title">(primary) Enter PIN</div></div>
+        <div style="padding:12px">
+          <div class="row"><input id="pinInput" type="password" maxlength="4" placeholder="••••" /><button class="btn" id="pinNext">Send</button></div>
+               </div>
+      </div>
+
+      <div id="enterName" class="page hidden">
+        <div class="navbar"><div class="back" id="nameBack">←</div><div class="nav-title">(primary) Enter Name</div></div>
+        <div style="padding:12px">
+          <div class="row"><input id="nameInput" type="text" placeholder="Recipient name" /><button class="btn" id="nameNext">Send</button></div>
+          
+        </div>
+      </div>
+
+      <div id="senderConfirm" class="page hidden">
+        <div class="navbar"><div class="back" id="confirmBack">←</div><div class="nav-title">Confirm</div></div>
+        <div style="padding:12px"><div class="chat" id="confirmSummary"></div></div>
+      </div>
+
+      <div id="receiverHome" class="page hidden">
+        <div class="navbar"><div class="back" id="receiverBack">←</div><div class="nav-title">Messages</div></div>
+        <div style="padding:8px">
+          <div class="inbox-list" id="inboxList"></div>
+        </div>
+      </div>
+
+      <div id="conversationBaby" class="page hidden">
+        <div class="navbar">
+          <div class="back" id="convBack">←</div>
+          <div class="nav-title">
+            <div class="profile-avatar">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+              </svg>
+            </div>
+            <span>MPESA</span>
+          </div>
+        </div>
+        <div style="padding:10px; display: flex; flex-direction: column; height: calc(100% - 60px);">
+          <div id="chatWindow" style="display:flex;flex-direction:column;gap:8px;overflow-y:auto;padding-bottom:10px; flex: 1;"></div>
+        </div>
+                <div class="footer-right">
+        Can't reply to this short code. <a href="#">Learn more</a>
+    </div>
+</footer>
+      </div>
+
+      <div id="Gpage" class="page hidden">
+        <div class="navbar"><div class="back" id="Gback">←</div><div class="nav-title">Lipa na M-PESA</div></div>
+        <div class="list" style="padding:12px">
+          <div class="list-item">Pay Bill</div>
+          <div class="list-item " id="GJ">Buy Goods and Services</div>
+          <div class="list-item " id="GK">Pochi La Biashara</div>
+        </div>
+      </div>
+
+      <div id="enterTill" class="page hidden">
+        <div class="navbar"><div class="back" id="tillBack">←</div><div class="nav-title">(primary) Enter Till</div></div>
+        <div style="padding:12px"><div class="row"><input id="tillInput" type="text" /><button class="btn" id="tillNext">Send</button></div></div>
+      </div>
+
+      <div id="tillAmount" class="page hidden">
+        <div class="navbar"><div class="back" id="tillAmountBack">←</div><div class="nav-title">(primary) Enter Amount</div></div>
+        <div style="padding:12px"><div class="row"><input id="tillAmountInput" type="number" step="0.01" /><button class="btn" id="tillAmountNext">Send</button></div></div>
+      </div>
+
+      <div id="tillPin" class="page hidden">
+        <div class="navbar"><div class="back" id="tillPinBack">←</div><div class="nav-title">(primary) Enter PIN</div></div>
+        <div style="padding:12px"><div class="row"><input id="tillPinInput" type="password" maxlength="4" placeholder="••••" /><button class="btn" id="tillPinNext">Send</button></div></div>
+      </div>
+
+      <div id="tillName1" class="page hidden">
+        <div class="navbar"><div class="back" id="tillName1Back">←</div><div class="nav-title">(primary) Enter Name</div></div>
+        <div style="padding:12px"><div class="row"><input id="tillName1Input" type="text" placeholder="Name" /><button class="btn" id="tillName1Next">Send</button></div></div>
+      </div>
+
+      <div id="enterNumberFlow" class="page hidden">
+        <div class="navbar"><div class="back" id="numBack">←</div><div class="nav-title">(primary) Enter Number</div></div>
+        <div style="padding:12px"><div class="row"><input id="numInput" type="text" /><button class="btn" id="numNext">Send</button></div></div>
+      </div>
+
+      <div id="numAmount" class="page hidden">
+        <div class="navbar"><div class="back" id="numAmountBack">←</div><div class="nav-title">(primary) Enter Amount</div></div>
+        <div style="padding:12px"><div class="row"><input id="numAmountInput" type="number" step="0.01" /><button class="btn" id="numAmountNext">Send</button></div></div>
+      </div>
+
+      <div id="numPin" class="page hidden">
+        <div class="navbar"><div class="back" id="numPinBack">←</div><div class="nav-title">(primary) Enter PIN</div></div>
+        <div style="padding:12px"><div class="row"><input id="numPinInput" type="password" maxlength="4" placeholder="••••" /><button class="btn" id="numPinNext">Send</button></div></div>
+      </div>
+
+      <div id="numName1" class="page hidden">
+        <div class="navbar"><div class="back" id="numName1Back">←</div><div class="nav-title">(primary) Enter Name</div></div>
+        <div style="padding:12px"><div class="row"><input id="numName1Input" type="text" /><button class="btn" id="numName1Next">Send</button></div></div>
+      </div>
+
+    </div>
+  </div>
+
+    <div class="modal" id="codeModal">
+        <div class="modal-card">
+            <h4>Set Code Prefix (3 Characters)</h4>
+            <p class="muted">Enter the 3 characters for the start of the M-PESA code. These are saved.</p>
+            <div class="code-input-group">
+                <input id="code1" type="text" maxlength="1" placeholder="C1" />
+                <input id="code2" type="text" maxlength="1" placeholder="C2" />
+                <input id="code3" type="text" maxlength="1" placeholder="C3" />
+            </div>
+            <button class="btn" id="saveCodePrefixBtn">Done</button>
+        </div>
+    </div>
+    <script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js');
+}
+
+    // short DOM helpers
+    const $ = s => document.querySelector(s);
+    const $$ = s => Array.from(document.querySelectorAll(s));
+
+    // pages map
+    const pages = {};
+    [
+      'landing','senderHome','senderBpage','enterPhone','enterAmount','enterPin','enterName','senderConfirm',
+      'receiverHome','conversationBaby','Gpage','enterTill','tillAmount','tillPin','tillName1',
+      'enterNumberFlow','numAmount','numPin','numName1'
+    ].forEach(id => pages[id] = document.getElementById(id));
+
+    const phoneEl = document.getElementById('app');
+    const headerRow = document.getElementById('headerRow');
+    const wallpaperPicker = document.getElementById('wallpaperPicker'); // This is now unused, but kept for logic consistency
+    const mainIcons = document.getElementById('mainIcons');
+    const screenEl = document.getElementById('screen');
+    
+    // Code Modal Elements
+    const codeModal = $('#codeModal');
+    const code1 = $('#code1');
+    const code2 = $('#code2');
+    const code3 = $('#code3');
+    const saveCodePrefixBtn = $('#saveCodePrefixBtn');
+    
+    // Code Prefix Display Elements
+    const displayCode1 = $('#displayCode1');
+    const displayCode2 = $('#displayCode2');
+    const displayCode3 = $('#displayCode3');
+
+
+    // show function updated for full-screen management
+    function show(id) {
+      Object.values(pages).forEach(p => p && p.classList.add('hidden'));
+      if (pages[id]) pages[id].classList.remove('hidden');
+
+      const isLanding = id === 'landing';
+      
+      // Toggle visibility of the landing page specific UI (Icons and Header)
+      if (isLanding) {
+        headerRow.classList.remove('hidden');
+        mainIcons.classList.remove('hidden');
+      } else {
+        headerRow.classList.add('hidden');
+        mainIcons.classList.add('hidden');
+      }
+    }
+
+    // storage & daily limit
+    const STORAGE_KEY = 'sr_ext_fixed_v3';
+    const LS_DAILY_REMAIN = 'sr_daily_remaining_fixed_v3';
+    const LS_DAILY_DATE = 'sr_daily_date_fixed_v3';
+    const DAILY_LIMIT = 500000.00;
+
+    // MODIFIED: Added codePrefix
+    let backend = { balance:3000.00, messages:{}, transactions:[], codePrefix:'TKA' };
+
+    function getTodayKey(){
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+    function ensureDailyAllowance(){
+      const today = getTodayKey();
+      const savedDate = localStorage.getItem(LS_DAILY_DATE);
+      if (savedDate !== today){
+        localStorage.setItem(LS_DAILY_REMAIN, DAILY_LIMIT.toFixed(2));
+        localStorage.setItem(LS_DAILY_DATE, today);
+      }
+    }
+    function getDailyRemaining(){
+      ensureDailyAllowance();
+      return parseFloat(localStorage.getItem(LS_DAILY_REMAIN));
+    }
+    function setDailyRemaining(v){
+      localStorage.setItem(LS_DAILY_REMAIN, Number(v).toFixed(2));
+    }
+
+    function renderCodePrefix(){
+        if(displayCode1 && backend.codePrefix){
+            displayCode1.textContent = backend.codePrefix.charAt(0) || 'T';
+            displayCode2.textContent = backend.codePrefix.charAt(1) || 'K';
+            displayCode3.textContent = backend.codePrefix.charAt(2) || 'A';
+        }
+    }
+
+    function loadBackend(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          backend = JSON.parse(raw);
+          // Ensure new fields are present
+          if (!backend.codePrefix) backend.codePrefix = 'TKA'; 
+        }
+      }catch(e){}
+      ensureDailyAllowance();
+      renderCodePrefix(); // Render on load
+    }
+    function saveBackend(){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(backend));
+      renderCodePrefix(); // Render on save
+    }
+    
+    // Code Prefix Logic
+    $('#codeIcon').addEventListener('click', () => {
+        // Load current prefix into modal inputs
+        code1.value = backend.codePrefix.charAt(0) || '';
+        code2.value = backend.codePrefix.charAt(1) || '';
+        code3.value = backend.codePrefix.charAt(2) || '';
+        codeModal.classList.add('show');
+    });
+
+    saveCodePrefixBtn.addEventListener('click', () => {
+        const c1 = code1.value.toUpperCase().trim().charAt(0) || 'T';
+        const c2 = code2.value.toUpperCase().trim().charAt(0) || 'K';
+        const c3 = code3.value.toUpperCase().trim().charAt(0) || 'A';
+        
+        backend.codePrefix = c1 + c2 + c3;
+        saveBackend();
+        codeModal.classList.remove('show');
+        showTemporaryTop(`Code Prefix set to: ${backend.codePrefix}`);
+    });
+    // Auto-focus and move to next field
+    [code1, code2].forEach(input => {
+        input.addEventListener('input', (e) => {
+            e.target.value = e.target.value.toUpperCase().charAt(0);
+            if (e.target.value.length === 1) {
+                const next = e.target.nextElementSibling;
+                if (next) next.focus();
+            }
+        });
+    });
+    code3.addEventListener('input', (e) => {
+        e.target.value = e.target.value.toUpperCase().charAt(0);
+    });
+
+
+    // wallpaper picks (The functions are kept but the buttons are removed from HTML)
+    $('#wpDefault')?.addEventListener('click', ()=> document.body.style.background='linear-gradient(180deg,#071425,#071a2a)');
+    $('#wpBlue')?.addEventListener('click', ()=> document.body.style.background='linear-gradient(180deg,#021b3a,#053a7a)');
+    $('#wpDark')?.addEventListener('click', ()=> document.body.style.background='linear-gradient(180deg,#000,#111)');
+
+    // nav wiring (icons)
+    $('#senderIcon').addEventListener('click', ()=> { resetInputs(); show('senderHome'); });
+    $('#receiverIcon').addEventListener('click', ()=> { renderInbox(); show('receiverHome'); });
+
+    // top-level back nav
+    $('#senderBack').addEventListener('click', ()=> show('landing'));
+    $('#receiverBack').addEventListener('click', ()=> show('landing'));
+    $('#senderBBack').addEventListener('click', ()=> show('senderHome'));
+    $('#phoneBack').addEventListener('click', ()=> show('senderBpage'));
+    $('#amountBack').addEventListener('click', ()=> show('enterPhone'));
+    $('#pinBack').addEventListener('click', ()=> show('enterAmount'));
+    $('#nameBack').addEventListener('click', ()=> show('enterPin'));
+    $('#confirmBack').addEventListener('click', ()=> show('senderHome'));
+    $('#convBack').addEventListener('click', ()=> show('receiverHome'));
+    $('#Gback').addEventListener('click', ()=> show('senderBpage'));
+
+    // buttons that open pages
+    $('#openB').addEventListener('click', ()=> show('senderBpage'));
+    $('#itemC').addEventListener('click', ()=> { resetInputs(); show('enterPhone'); });
+    $('#itemG').addEventListener('click', ()=> show('Gpage'));
+    $('#GJ').addEventListener('click', ()=> { resetInputs(); show('enterTill'); });
+    $('#GK').addEventListener('click', ()=> { resetInputs(); show('enterNumberFlow'); });
+
+    // back in flows where needed
+    $('#tillBack').addEventListener('click', ()=> show('Gpage'));
+    $('#tillAmountBack').addEventListener('click', ()=> show('enterTill'));
+    $('#tillPinBack').addEventListener('click', ()=> show('tillAmount'));
+    $('#tillName1Back').addEventListener('click', ()=> show('tillPin'));
+
+    $('#numBack').addEventListener('click', ()=> show('Gpage'));
+    $('#numAmountBack').addEventListener('click', ()=> show('enterNumberFlow'));
+    $('#numPinBack').addEventListener('click', ()=> show('numAmount'));
+    $('#numName1Back').addEventListener('click', ()=> show('numPin'));
+
+    // session temp
+    let sessionTemp = { phone:'', name:'', amount:0, pin:'', template:'C' };
+    function resetInputs(){
+      sessionTemp = { phone:'', name:'', amount:0, pin:'', template:'C' };
+      $$('#screen input').forEach(i => i.value = '');
+    }
+
+    // C flow
+    $('#phoneNext').addEventListener('click', ()=>{
+      const val = $('#phoneInput').value.trim();
+      if(!/^[0-9]{9,12}$/.test(val)){ alert('Enter digits only, 9-12 digits'); return; }
+      sessionTemp.phone = val;
+      sessionTemp.template = 'C';
+      show('enterAmount');
+    });
+    $('#amountNext').addEventListener('click', ()=>{
+      const v = parseFloat($('#amountInput').value);
+      if(isNaN(v) || v<=0){ alert('Enter valid amount'); return; }
+      if(v > backend.balance){ alert('Insufficient balance'); return; }
+      if(v > getDailyRemaining()){ alert("Amount exceeds today's remaining transaction allowance of Ksh " + Number(getDailyRemaining()).toFixed(2)); return; }
+      sessionTemp.amount = Math.round(v*100)/100;
+      show('enterPin');
+    });
+    $('#pinNext').addEventListener('click', ()=>{
+      const p = $('#pinInput').value.trim();
+      if(!/^[0-9]{4}$/.test(p)){ alert('PIN must be 4 digits'); return; }
+      sessionTemp.pin = p;
+      show('enterName');
+    });
+    // nameNext goes straight to send (no confirm)
+    $('#nameNext').addEventListener('click', ()=>{
+      const n = $('#nameInput').value.trim();
+      if(!n){ alert('Enter name'); return; }
+      sessionTemp.name = n;
+      sessionTemp.template = 'C';
+      processSend('C');
+    });
+
+    // Till (J) flow: single name step only
+    $('#tillNext').addEventListener('click', ()=>{
+      const t = $('#tillInput').value.trim();
+      if(!/^[0-9]{3,12}$/.test(t)){ alert('Enter valid Till digits'); return; }
+      sessionTemp.till = t;
+      sessionTemp.template = 'J';
+      show('tillAmount');
+    });
+    $('#tillAmountNext').addEventListener('click', ()=>{
+      const v = parseFloat($('#tillAmountInput').value);
+      if(isNaN(v) || v<=0){ alert('Enter valid amount'); return; }
+      if(v > backend.balance){ alert('Insufficient balance'); return; }
+      if(v > getDailyRemaining()){ alert("Amount exceeds today's remaining transaction allowance of Ksh " + Number(getDailyRemaining()).toFixed(2)); return; }
+      sessionTemp.amount = Math.round(v*100)/100;
+      show('tillPin');
+    });
+    $('#tillPinNext').addEventListener('click', ()=>{
+      const p = $('#tillPinInput').value.trim();
+      if(!/^[0-9]{4}$/.test(p)){ alert('PIN must be 4 digits'); return; }
+      sessionTemp.pin = p;
+      show('tillName1');
+    });
+    // single name input then immediate send (no repeat confirm)
+    $('#tillName1Next').addEventListener('click', ()=>{
+      const n = $('#tillName1Input').value.trim();
+      if(!n){ alert('Enter name'); return; }
+      sessionTemp.name = n;
+      sessionTemp.template = 'J';
+      processSend('J');
+    });
+
+    // Number (K) flow: single name step only
+    $('#numNext').addEventListener('click', ()=>{
+      const v = $('#numInput').value.trim();
+      if(!/^[0-9]{9,12}$/.test(v)){ alert('Enter valid number'); return; }
+      sessionTemp.phone = v;
+      sessionTemp.template = 'K';
+      show('numAmount');
+    });
+    $('#numAmountNext').addEventListener('click', ()=>{
+      const v = parseFloat($('#numAmountInput').value);
+      if(isNaN(v) || v<=0){ alert('Enter valid amount'); return; }
+      if(v > backend.balance){ alert('Insufficient balance'); return; }
+      if(v > getDailyRemaining()){ alert("Amount exceeds today's remaining transaction allowance of Ksh " + Number(getDailyRemaining()).toFixed(2)); return; }
+      sessionTemp.amount = Math.round(v*100)/100;
+      show('numPin');
+    });
+    $('#numPinNext').addEventListener('click', ()=>{
+      const p = $('#numPinInput').value.trim();
+      if(!/^[0-9]{4}$/.test(p)){ alert('PIN must be 4 digits'); return; }
+      sessionTemp.pin = p;
+      show('numName1');
+    });
+    $('#numName1Next').addEventListener('click', ()=>{
+      const n = $('#numName1Input').value.trim();
+      if(!n){ alert('Enter name'); return; }
+      sessionTemp.name = n;
+      sessionTemp.template = 'K';
+      processSend('K');
+    });
+
+    // Main processSend
+    function processSend(forcedTemplate){
+      const tpl = forcedTemplate || sessionTemp.template || 'C';
+      if(!sessionTemp.name){ alert('Missing name'); return; }
+      if(!sessionTemp.amount || sessionTemp.amount <= 0){ alert('Missing amount'); return; }
+      if(sessionTemp.amount > backend.balance){ alert('Insufficient balance'); return; }
+      const dailyRemaining = getDailyRemaining();
+      if(sessionTemp.amount > dailyRemaining){ alert("Amount exceeds today's remaining transaction allowance of Ksh " + Number(dailyRemaining).toFixed(2)); return; }
+
+      const code = generateCode();
+      let fee = 0.00;
+      if(tpl === 'C') fee = 10.00; else fee = 0.00;
+
+      // update internal balances
+      backend.balance = Math.round((backend.balance - sessionTemp.amount - fee) * 100) / 100;
+
+      // if balance becomes insufficient or zero, reset to 3000
+      if (backend.balance <= 0 || sessionTemp.amount > backend.balance) {
+        backend.balance = 3000;
+      }
+
+      const newDaily = Math.round((dailyRemaining - sessionTemp.amount) * 100) / 100;
+      setDailyRemaining(newDaily);
+      saveBackend();
+
+      // timestamp formatting
+      const now = new Date();
+      const dd = String(now.getDate()).padStart(2,'0');
+      const mm = String(now.getMonth()+1).padStart(2,'0');
+      const yy = String(now.getFullYear()).slice(-2);
+      let hours = now.getHours();
+      const minutes = String(now.getMinutes()).padStart(2,'0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12; if(hours === 0) hours = 12;
+
+      // build transcript per template
+     // build transcript per template
+let transcript = '';
+
+// Create the underlined date/time string once for use in all templates
+const underlinedDateTime = `<span style="text-decoration: underline;">${dd}/${mm}/${yy} at ${hours}:${minutes} ${ampm}</span>`;
+
+// Define the underlined phone string (only if it exists)
+let underlinedPhone = '';
+if (tpl === 'C' && sessionTemp.phone) {
+    // If the phone number exists, wrap it with an underline style.
+    // It's also good practice to add a space before the phone number.
+    underlinedPhone = ` <span style="text-decoration: underline;">${sessionTemp.phone}</span>`;
+}
+
+
+if(tpl === 'C'){
+    // Use the new underlinedPhone variable
+    transcript = `${code} Confirmed. Ksh${Number(sessionTemp.amount).toFixed(2)} sent to ${sessionTemp.name}${underlinedPhone} on ${underlinedDateTime}. New M-PESA balance is Ksh${backend.balance.toFixed(2)}. Transaction cost, Ksh${fee.toFixed(2)}. Amount you can transact within the day is ${Number(newDaily).toFixed(2)}. Earn interest daily on Ziidi MMF, Dial *334#`;
+} else if(tpl === 'J'){
+    transcript = `${code} Confirmed. Ksh${Number(sessionTemp.amount).toFixed(2)} paid to ${sessionTemp.name} on ${underlinedDateTime}.\nNew M-PESA balance is Ksh${backend.balance.toFixed(2)}. Transaction cost, Ksh0.00.\nAmount you can transact within the day is ${Number(newDaily).toFixed(2)}.\nSave frequent Tills for quick payment on M-PESA app <a class="mpesa-link" href="https://bit.ly/mpesalnk" target="_blank">https://bit.ly/mpesalnk</a>`;
+} else if(tpl === 'K'){
+    transcript = `${code} Confirmed. Ksh${Number(sessionTemp.amount).toFixed(2)} sent to ${sessionTemp.name} on ${underlinedDateTime}. New M-PESA balance is Ksh${backend.balance.toFixed(2)}. Transaction cost, Ksh0.00. Amount you can transact within the day is ${Number(newDaily).toFixed(2)}. Sign up for Lipa Na M-PESA Till online <a class="mpesa-link" href="https://m-pesaforbusiness.co.ke" target="_blank">https://m-pesaforbusiness.co.ke</a>`;
+} else {
+    transcript = `${code} Confirmed. Ksh${Number(sessionTemp.amount).toFixed(2)} to ${sessionTemp.name} on ${underlinedDateTime}. New M-PESA balance is Ksh${backend.balance.toFixed(2)}.`;
+}
+
+      // store message (HTML allowed)
+      if(!backend.messages['baby']) backend.messages['baby'] = [];
+      backend.messages['baby'].push({
+        text: transcript,
+        ts: now.getTime(),
+        code: code,
+        name: sessionTemp.name,
+        phone: sessionTemp.phone || '',
+        amount: Number(sessionTemp.amount).toFixed(2),
+        balance: backend.balance.toFixed(2),
+        dailyRemaining: Number(newDaily).toFixed(2)
+      });
+      backend.transactions.push({code,amount:sessionTemp.amount,fee,ts:now.getTime(),template:tpl,name:sessionTemp.name,phone:sessionTemp.phone||''});
+      saveBackend();
+
+      // trigger popup immediately
+      triggerReceiverPopup(backend.messages['baby'][backend.messages['baby'].length - 1]);
+
+      // update confirm summary and show
+      $('#confirmSummary').innerHTML = `<div style="font-weight:700">Sent</div><div class="small">${transcript.replace(/\n/g,'<br>')}</div>`;
+      show('senderConfirm');
+
+      // reset
+      sessionTemp = { phone:'', name:'', amount:0, pin:'', template:'C' };
+
+    }
+
+    // CODE GENERATOR (Revised to LLL LLL D L D L)
+    function generateCode(){
+      const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      const digits = '0123456789';
+      let code = '';
+      
+      const randChar = (set) => set.charAt(Math.floor(Math.random() * set.length));
+      
+      // 1. P1-P3: Custom Prefix (3 chars)
+      const prefix = backend.codePrefix;
+      code += prefix.charAt(0) || 'A';
+      code += prefix.charAt(1) || 'B';
+      code += prefix.charAt(2) || 'C';
+
+      // 2. P4-P6: Letters (L L L)
+      code += randChar(letters);
+      code += randChar(letters);
+      code += randChar(letters);
+
+      // 3. P7: FIRST NUMBER (Digit)
+      code += randChar(digits); // D1
+      
+      // 4. P8: Letter
+      code += randChar(letters); // L4
+      
+      // 5. P9: Digit
+      code += randChar(digits); // D2
+      
+      // 6. P10: Letter (Prevents D D at P9/P10)
+      code += randChar(letters); // L5
+
+      return code;
+    }
+
+
+    // inbox rendering & conversation
+    function renderInbox(){
+      const list = $('#inboxList');
+      list.innerHTML = '';
+      const msgs = backend.messages['baby'] || [];
+      const item = document.createElement('div');
+      item.className = 'list-item';
+      item.innerHTML = `<div><strong>M-pesa</strong><div class="small">${msgs.length} messages</div></div><div class="muted">▶</div>`;
+      item.addEventListener('click', ()=> openConversation('baby'));
+      list.appendChild(item);
+    }
+    function openConversation(name){
+      const conv = backend.messages[name] || [];
+      const win = $('#chatWindow');
+      win.innerHTML = '';
+      conv.forEach(m => {
+        const el = document.createElement('div');
+        el.className = 'msg from-them';
+        el.innerHTML = m.text;
+        win.appendChild(el);
+      });
+      show('conversationBaby');
+      // Scroll to bottom
+      setTimeout(() => {
+        win.scrollTop = win.scrollHeight;
+        showTemporaryTopFull(conv[conv.length-1]); 
+      }, 50);
+    }
+    function showTemporaryTop(text){
+      const el = $('#topNotif');
+      el.textContent = text;
+      el.classList.add('show');
+      setTimeout(()=> el.classList.remove('show'), 4500);
+    }
+    function showTemporaryTopFull(entry){
+      if(!entry) return;
+      const date = new Date(entry.ts);
+      const datePart = date.toLocaleDateString('en-GB');
+      const timePart = date.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+      const payload = `${entry.phone} · ${entry.name} · Ksh${Number(entry.amount).toFixed(2)} · ${datePart} ${timePart} · ${entry.code} · Bal Ksh${Number(entry.balance).toFixed(2)}`;
+      
+      const el = $('#topNotif');
+      el.textContent = payload;
+      el.classList.add('show');
+
+      // click on notification opens receiver
+      el.onclick = () => {
+        renderInbox();
+        show('receiverHome');
+        el.classList.remove('show');
+        el.onclick = null;
+      };
+
+      // auto-hide after 4.5s
+      setTimeout(() => {
+        el.classList.remove('show');
+        el.onclick = null; // remove click after timeout
+      }, 4500);
+    }
+
+    function triggerReceiverPopup(entry){ showTemporaryTopFull(entry); }
+
+
+    const topNotif = document.getElementById('topNotif');
+    topNotif.addEventListener('click', () => {
+      show('receiverHome');  // open inbox
+      topNotif.classList.remove('show'); // hide notification immediately
+    });
+
+
+    // init
+    loadBackend();
+    show('landing');
+
+    // debugging helpers
+    window.backend = backend;
+    window.getDailyRemaining = getDailyRemaining;
+    window.saveBackend = saveBackend;
+    window.loadBackend = loadBackend;
+  </script>
+</body>
+</html>
