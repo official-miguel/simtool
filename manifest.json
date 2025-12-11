@@ -1,6 +1,6 @@
 {
   "name": "Trick World",
-  "short_name": "TrickWorld",
+  "short_name": "simtool-kit",
   "start_url": "./index.html",
   "display": "standalone",   
   "background_color": "#071425",
@@ -18,3 +18,4 @@
     }
   ]
 }
+
