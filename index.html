@@ -179,12 +179,27 @@
     border-top: 1px solid #ddd; /* Separator line */
 }
 
-/* Style for the actionable link */
-.dont-reply-footer a {
-    color: #007aff; /* Standard mobile UI blue */
-    text-decoration: none;
-    font-weight: 500;
+
+.dont-reply-footer {
+  position: fixed;       /* locks footer to viewport */
+  bottom: 0;             /* anchors at bottom */
+  left: 0;
+  width: 100%;           /* full width */
+  background-color: lightgrey;
+  border-top: 1px solid #ddd;
+  padding: 8px 15px;
+  text-align: center;
+  font-size: 13px;
+  color: #555;
+  z-index: 1000;         /* ensures it stays above content */
 }
+
+.dont-reply-footer a {
+  color: #007aff;
+  text-decoration: none;
+  font-weight: 500;
+}
+
 
     
     #conversationBaby .navbar {
@@ -347,10 +362,13 @@
         <div style="padding:10px; display: flex; flex-direction: column; height: calc(100% - 60px);">
           <div id="chatWindow" style="display:flex;flex-direction:column;gap:8px;overflow-y:auto;padding-bottom:10px; flex: 1;"></div>
         </div>
-                <div class="footer-right" style="text-align: center;">
-        Can't reply to this short code. <a href="#">Learn more</a>
-    </div>
-</footer>
+              <div class="footer dont-reply-footer">
+  <div class="footer-right">
+    Can't reply to this short code. <a href="#">Learn more</a>
+  </div>
+</div>
+
+
       </div>
 
       <div id="Gpage" class="page hidden">
@@ -899,6 +917,16 @@ if(tpl === 'C'){
     window.getDailyRemaining = getDailyRemaining;
     window.saveBackend = saveBackend;
     window.loadBackend = loadBackend;
+
+    
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("service-worker.js")
+      .then(reg => console.log("Service worker registered:", reg))
+      .catch(err => console.error("Service worker registration failed:", err));
+  }
+
+
   </script>
 </body>
 </html>
+
