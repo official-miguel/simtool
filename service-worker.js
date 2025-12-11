@@ -8,8 +8,7 @@ const urlsToCache = [
   './', // Caches the main index.html (when accessed via root URL)
   'index.html',
   'manifest.json',
-  'app.js', // ⬅️ CRITICAL: Cache your main application logic
-  'offline.html', // ⬅️ CRITICAL: Cache the fallback page
+   'offline.html', 
   '/icons/icon-192x192.png',
   '/icons/icon-512x512.png'
   // Note: Your HTML uses a <style> block, so no separate CSS file is needed.
