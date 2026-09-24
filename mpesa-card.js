@@ -87,12 +87,13 @@
         border: 0 !important;
         border-radius: 18px !important;
         overflow: hidden;
+        zoom: var(--message-scale, 1);
       }
       .mpesa-copy {
         background: rgba(20, 40, 28, 0.9) !important;
         padding: 18px 18px 14px !important;
         color: #eaf2ed !important;
-        font-size: calc(15px * var(--message-scale, 1)) !important;
+        font-size: 15px !important;
         line-height: 1.4 !important;
         overflow-wrap: anywhere;
         letter-spacing: -0.01em;
