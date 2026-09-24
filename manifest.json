@@ -1,8 +1,11 @@
 {
+  "id": "./",
   "name": "Trick World",
   "short_name": "simtool-kit",
   "start_url": "./index.html",
-  "display": "standalone",   
+  "scope": "./",
+  "display_override": ["fullscreen", "standalone"],
+  "display": "fullscreen",
   "background_color": "#071425",
   "theme_color": "#327acd",
   "icons": [
@@ -18,4 +21,3 @@
     }
   ]
 }
-
