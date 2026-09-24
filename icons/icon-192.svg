@@ -1,7 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
-  <title>Trick World</title>
-  <rect width="512" height="512" rx="96" fill="#071425"/>
-  <circle cx="256" cy="220" r="132" fill="#327acd"/>
-  <path d="M190 220h132M256 154v132" stroke="#fff" stroke-width="32" stroke-linecap="round"/>
-  <text x="256" y="414" text-anchor="middle" fill="#fff" font-family="Arial,sans-serif" font-size="52" font-weight="700">TW</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192" role="img" aria-label="Trick World">
+  <rect width="192" height="192" rx="32" fill="#071425"/>
+  <circle cx="96" cy="96" r="62" fill="#327acd"/>
+  <path d="M62 70h68a10 10 0 0 1 10 10v34a10 10 0 0 1-10 10H96l-22 18v-18H62a10 10 0 0 1-10-10V80a10 10 0 0 1 10-10Z" fill="#fff"/>
+  <circle cx="78" cy="97" r="6" fill="#327acd"/><circle cx="96" cy="97" r="6" fill="#327acd"/><circle cx="114" cy="97" r="6" fill="#327acd"/>
 </svg>
