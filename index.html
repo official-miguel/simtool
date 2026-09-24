@@ -85,6 +85,9 @@
       border-bottom: 1px solid var(--line);
     }
     .back {
+      display: flex;
+      align-items: center;
+      justify-content: center;
       background: transparent;
       border: 0;
       color: #fff;
@@ -93,6 +96,9 @@
       cursor: pointer;
       padding: 0;
       width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      flex-shrink: 0;
     }
     .nav-title {
       font-weight: 700;
@@ -498,7 +504,7 @@
         state.balance = newBalance;
         state.daily = Math.round((state.daily - flow.amount) * 100) / 100;
 
-        var text = 'Confirmed. Ksh' + Number(flow.amount).toFixed(2) + ' sent to ' + name + ' ' + flow.phone + ' on ' + now.toLocaleDateString('en-GB') + ' at ' + now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) + '. New M-PESA balance is Ksh' + state.balance.toFixed(2) + '. Transaction cost, Ksh' + fee.toFixed(2) + '. Amount you can transact within the day is ' + state.daily.toFixed(2) + '. See all your balances now https://saf.cx/kWQpy';
+        var text = 'Confirmed. Ksh' + Number(flow.amount).toFixed(2) + ' sent to ' + name + ' ' + flow.phone + ' on ' + now.toLocaleDateString('en-GB') + ' at ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + '. Balance: Ksh' + state.balance.toFixed(2);
 
         var entry = {
           text: text,
