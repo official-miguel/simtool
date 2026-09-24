@@ -150,6 +150,54 @@
     .prefix-display span {
         padding: 0 1px;
     }
+
+    .mpesa-body {
+      width: 100%;
+      padding: 0;
+      margin: 0;
+      color: #e8eee9;
+      font-family: Arial, sans-serif;
+    }
+    .mpesa-card-item {
+      min-height: 0;
+      margin-bottom: 24px;
+    }
+    .mpesa-message {
+      background: #f5f5f5;
+      border-radius: 18px 18px 18px 18px;
+      overflow: hidden;
+      width: 100%;
+      border: 1px solid rgba(0,0,0,.02);
+    }
+    .mpesa-copy {
+      padding: 14px 14px 8px 14px;
+      font-size: 15px;
+      line-height: 1.28;
+      letter-spacing: -.16px;
+      color: #dfe2dc;
+      word-break: break-word;
+      background: rgba(21, 30, 22, .18);
+    }
+    .mpesa-copy a {
+      color: #e3efe4 !important; text-decoration: underline; text-underline-offset: 2px;
+    }
+    .mpesa-brand-svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 0 0 18px 18px;
+      background: #f5f5f5;
+    }
+    .mpesa-app {
+      margin: 18px 0 0 6px; font-size: 18px; color: #e8ecf0; font-weight: 600;
+    }
+    .mpesa-link {
+      margin: 10px 0 0 6px; color: #dfe8df; font-size: 12px; opacity: .9;
+    }
+    .mpesa-time {
+      margin: 20px 0 0 6px; font-size: 11px; color: #dfe8df; opacity: .92;
+    }
+    .mpesa-time strong { color: #ffb347; font-weight: 700; }
   </style>
 
   <style>
@@ -244,84 +292,6 @@
         align-items: center;
         gap: 10px; 
     }
-
-    .mpesa-body {
-      width: 100%;
-      padding: 0;
-      margin: 0;
-      color: #e8eee9;
-      font-family: Arial, sans-serif;
-    }
-    .mpesa-card-item {
-      min-height: 0;
-      margin-bottom: 24px;
-    }
-    .mpesa-message {
-      background: rgba(31, 49, 39, 0.8);
-      border-radius: 18px 18px 18px 18px;
-      overflow: hidden;
-      border: 1px solid rgba(255,255,255,0.01);
-      width: 100%;
-    }
-    .mpesa-copy {
-      padding: 14px 14px 8px 14px;
-      font-size: 15px;
-      line-height: 1.28;
-      letter-spacing: -.16px;
-      color: #dfe2dc;
-      word-break: break-word;
-    }
-    .mpesa-copy a {
-      color: #e3efe4 !important; text-decoration: underline; text-underline-offset: 2px;
-    }
-    .mpesa-promo {
-      margin-top: 4px;
-      border-radius: 18px 18px 0 0;
-      overflow: hidden;
-      background: #4bbf5d;
-      border: 1px solid rgba(255,255,255,.02);
-    }
-    .mpesa-graphic {
-      height: 180px; position: relative; background: #4bbf5d; overflow: hidden;
-    }
-    .mpesa-graphic::before {
-      content: ""; position: absolute; width: 260px; height: 90px; border: 18px solid #ff2a43; border-radius: 50%; left: 32px; top: 42px; transform: rotate(-25deg);
-    }
-    .mpesa-graphic::after {
-      content: ""; position: absolute; width: 250px; height: 90px; border: 16px solid #ff2a43; border-radius: 50%; right: 18px; top: 38px; transform: rotate(-25deg);
-      opacity: 0.7;
-    }
-    .mpesa-letter {
-      position: absolute; left: 50%; top: 50%; transform: translate(-50%, -44%);
-      font-size: 120px; font-weight: 900; color: #f4f5f4; font-family: Arial, sans-serif;
-      letter-spacing: -10px;
-    }
-    .mpesa-brandbar {
-      background: #f8f8f8; color: #1dba56; display: flex; align-items: center; justify-content: center;
-      gap: 10px; height: 64px; font-weight: 700; font-size: 20px; padding: 0 14px;
-    }
-    .mpesa-saf {
-      color: #f62f3f; font-weight: 800; font-style: italic; font-size: 22px;
-    }
-    .mpesa-divider {
-      width: 2px; height: 28px; background: rgba(31, 134, 74, .6);
-    }
-    .mpesa-mini {
-      color: #1db955; font-weight: 800; font-size: 20px;
-    }
-    .mpesa-mini .box {
-      display: inline-block; width: 10px; height: 10px; margin: 0 2px; background: #f7f7f7; border: 2px solid #1db955; border-radius: 2px;
-    }
-    .mpesa-app {
-      margin: 18px 0 0 6px; font-size: 18px; color: #e8ecf0; font-weight: 600;
-    }
-    .mpesa-link {
-      margin: 10px 0 0 6px; color: #dfe8df; font-size: 12px; opacity: .9;
-    }
-    .mpesa-time {
-      margin: 20px 0 0 6px; font-size: 11px; color: #dfe8df; opacity: .92;
-    }
-    .mpesa-time strong { color: #ffb347; font-weight: 700; }
   </style>
   </head>
 <body>
@@ -573,7 +543,6 @@ if ('serviceWorker' in navigator) {
     const LS_DAILY_DATE = 'sr_daily_date_fixed_v3';
     const DAILY_LIMIT = 500000.00;
 
-    // MODIFIED: Added codePrefix
     let backend = { balance:3000.00, messages:{}, transactions:[], codePrefix:'TKA' };
 
     function getTodayKey(){
@@ -609,21 +578,18 @@ if ('serviceWorker' in navigator) {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (raw) {
           backend = JSON.parse(raw);
-          // Ensure new fields are present
           if (!backend.codePrefix) backend.codePrefix = 'TKA'; 
         }
       }catch(e){}
       ensureDailyAllowance();
-      renderCodePrefix(); // Render on load
+      renderCodePrefix();
     }
     function saveBackend(){
       localStorage.setItem(STORAGE_KEY, JSON.stringify(backend));
-      renderCodePrefix(); // Render on save
+      renderCodePrefix();
     }
     
-    // Code Prefix Logic
     $('#codeIcon').addEventListener('click', () => {
-        // Load current prefix into modal inputs
         code1.value = backend.codePrefix.charAt(0) || '';
         code2.value = backend.codePrefix.charAt(1) || '';
         code3.value = backend.codePrefix.charAt(2) || '';
@@ -634,13 +600,11 @@ if ('serviceWorker' in navigator) {
         const c1 = code1.value.toUpperCase().trim().charAt(0) || 'T';
         const c2 = code2.value.toUpperCase().trim().charAt(0) || 'K';
         const c3 = code3.value.toUpperCase().trim().charAt(0) || 'A';
-        
         backend.codePrefix = c1 + c2 + c3;
         saveBackend();
         codeModal.classList.remove('show');
         showTemporaryTop(`Code Prefix set to: ${backend.codePrefix}`);
     });
-    // Auto-focus and move to next field
     [code1, code2].forEach(input => {
         input.addEventListener('input', (e) => {
             e.target.value = e.target.value.toUpperCase().charAt(0);
@@ -654,17 +618,13 @@ if ('serviceWorker' in navigator) {
         e.target.value = e.target.value.toUpperCase().charAt(0);
     });
 
-
-    // wallpaper picks (The functions are kept but the buttons are removed from HTML)
     $('#wpDefault')?.addEventListener('click', ()=> document.body.style.background='linear-gradient(180deg,#071425,#071a2a)');
     $('#wpBlue')?.addEventListener('click', ()=> document.body.style.background='linear-gradient(180deg,#021b3a,#053a7a)');
     $('#wpDark')?.addEventListener('click', ()=> document.body.style.background='linear-gradient(180deg,#000,#111)');
 
-    // nav wiring (icons)
     $('#senderIcon').addEventListener('click', ()=> { resetInputs(); show('senderHome'); });
     $('#receiverIcon').addEventListener('click', ()=> { renderInbox(); show('receiverHome'); });
 
-    // top-level back nav
     $('#senderBack').addEventListener('click', ()=> show('landing'));
     $('#receiverBack').addEventListener('click', ()=> show('landing'));
     $('#senderBBack').addEventListener('click', ()=> show('senderHome'));
@@ -676,14 +636,12 @@ if ('serviceWorker' in navigator) {
     $('#convBack').addEventListener('click', ()=> show('receiverHome'));
     $('#Gback').addEventListener('click', ()=> show('senderBpage'));
 
-    // buttons that open pages
     $('#openB').addEventListener('click', ()=> show('senderBpage'));
     $('#itemC').addEventListener('click', ()=> { resetInputs(); show('enterPhone'); });
     $('#itemG').addEventListener('click', ()=> show('Gpage'));
     $('#GJ').addEventListener('click', ()=> { resetInputs(); show('enterTill'); });
     $('#GK').addEventListener('click', ()=> { resetInputs(); show('enterNumberFlow'); });
 
-    // back in flows where needed
     $('#tillBack').addEventListener('click', ()=> show('Gpage'));
     $('#tillAmountBack').addEventListener('click', ()=> show('enterTill'));
     $('#tillPinBack').addEventListener('click', ()=> show('tillAmount'));
@@ -694,14 +652,12 @@ if ('serviceWorker' in navigator) {
     $('#numPinBack').addEventListener('click', ()=> show('numAmount'));
     $('#numName1Back').addEventListener('click', ()=> show('numPin'));
 
-    // session temp
     let sessionTemp = { phone:'', name:'', amount:0, pin:'', template:'C' };
     function resetInputs(){
       sessionTemp = { phone:'', name:'', amount:0, pin:'', template:'C' };
       $$('#screen input').forEach(i => i.value = '');
     }
 
-    // C flow
     $('#phoneNext').addEventListener('click', ()=>{
       const val = $('#phoneInput').value.trim();
       if(!/^[0-9]{9,12}$/.test(val)){ alert('Enter digits only, 9-12 digits'); return; }
@@ -722,7 +678,6 @@ if ('serviceWorker' in navigator) {
       sessionTemp.pin = p;
       show('enterName');
     });
-    // nameNext goes straight to send (no confirm)
     $('#nameNext').addEventListener('click', ()=>{
       const n = $('#nameInput').value.trim();
       if(!n){ alert('Enter name'); return; }
@@ -731,7 +686,6 @@ if ('serviceWorker' in navigator) {
       processSend('C');
     });
 
-    // Till (J) flow: single name step only
     $('#tillNext').addEventListener('click', ()=>{
       const t = $('#tillInput').value.trim();
       if(!/^[0-9]{3,12}$/.test(t)){ alert('Enter valid Till digits'); return; }
@@ -752,7 +706,6 @@ if ('serviceWorker' in navigator) {
       sessionTemp.pin = p;
       show('tillName1');
     });
-    // single name input then immediate send (no repeat confirm)
     $('#tillName1Next').addEventListener('click', ()=>{
       const n = $('#tillName1Input').value.trim();
       if(!n){ alert('Enter name'); return; }
@@ -761,7 +714,6 @@ if ('serviceWorker' in navigator) {
       processSend('J');
     });
 
-    // Number (K) flow: single name step only
     $('#numNext').addEventListener('click', ()=>{
       const v = $('#numInput').value.trim();
       if(!/^[0-9]{9,12}$/.test(v)){ alert('Enter valid number'); return; }
@@ -805,19 +757,37 @@ if ('serviceWorker' in navigator) {
         .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>')
         .replace(/\n/g, '<br>');
 
+      const logoSvg = `
+        <svg class="mpesa-brand-svg" viewBox="0 0 640 430" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Safaricom M-Pesa logo">
+          <defs>
+            <linearGradient id="g1" x1="0" x2="1" y1="0" y2="1">
+              <stop offset="0%" stop-color="#41c85a"/>
+              <stop offset="100%" stop-color="#2ca54b"/>
+            </linearGradient>
+          </defs>
+          <rect x="0" y="0" width="640" height="260" rx="30" fill="url(#g1)"/>
+          <path d="M10 235 C 170 120, 255 100, 280 125 C 315 160, 315 220, 245 248 C 190 269, 130 270, 10 235Z" fill="#f73d4d"/>
+          <path d="M517 140 C 600 140, 641 174, 642 230 C 638 287, 594 326, 534 326 C 470 325, 625 315, 603 215 C 589 161, 558 139, 517 140Z" fill="#f73d4d" opacity="0.9"/>
+          <g>
+            <path d="M100 158 C 275 79, 350 110, 410 170 C 470 229, 515 230, 585 178" stroke="#f73d4d" stroke-width="26" stroke-linecap="round" fill="none"/>
+          </g>
+          <text x="322" y="210" font-family="Arial, Helvetica, sans-serif" font-size="190" font-weight="800" fill="#ffffff" text-anchor="middle">S</text>
+          <rect x="0" y="260" width="640" height="170" rx="28" fill="#f5f5f5"/>
+          <path d="M80 330 C 118 300, 170 300, 197 330 C 216 350, 223 372, 212 397 C 201 424, 170 437, 118 436 C 77 435, 38 421, 32 391 C 29 376, 39 367, 52 357 C 65 348, 70 347, 80 330Z" fill="#f73d4d" opacity="0.9"/>
+          <text x="170" y="370" font-family="Arial, Helvetica, sans-serif" font-size="66" font-weight="800" fill="#f73d4d" font-style="italic">Safaricom</text>
+          <rect x="390" y="302" width="4" height="72" fill="#2ca54b" opacity="0.7"/>
+          <text x="435" y="371" font-family="Arial, Helvetica, sans-serif" font-size="62" font-weight="900" fill="#2ca54b">m</text>
+          <rect x="486" y="308" width="20" height="36" rx="3" fill="#ffffff" stroke="#2ca54b" stroke-width="4"/>
+          <rect x="496" y="318" width="22" height="54" rx="4" fill="#ffffff" stroke="#2ca54b" stroke-width="4"/>
+          <text x="520" y="370" font-family="Arial, Helvetica, sans-serif" font-size="62" font-weight="900" fill="#2ca54b">pesa</text>
+        </svg>`;
+
       const wrapper = document.createElement('div');
       wrapper.className = 'mpesa-body mpesa-card-item';
       wrapper.innerHTML = [
         '<article class="mpesa-message">',
         '  <div class="mpesa-copy">' + safeText + '</div>',
-        '  <div class="mpesa-promo">',
-        '    <div class="mpesa-graphic"><div class="mpesa-letter">S</div></div>',
-        '    <div class="mpesa-brandbar">',
-        '      <span class="mpesa-saf">Safaricom</span>',
-        '      <span class="mpesa-divider"></span>',
-        '      <span class="mpesa-mini">m<span class="box"></span>pesa</span>',
-        '    </div>',
-        '  </div>',
+        '  ' + logoSvg,
         '</article>',
         '<div class="mpesa-app">Fintech App</div>',
         '<div class="mpesa-link">saf.cx</div>',
@@ -827,7 +797,6 @@ if ('serviceWorker' in navigator) {
       return wrapper;
     }
 
-    // Main processSend
     function processSend(forcedTemplate){
       const tpl = forcedTemplate || sessionTemp.template || 'C';
       if(!sessionTemp.name){ alert('Missing name'); return; }
@@ -839,19 +808,13 @@ if ('serviceWorker' in navigator) {
       let fee = 0.00;
       if(tpl === 'C') fee = 10.00; else fee = 0.00;
 
-      // update internal balances
       backend.balance = Math.round((backend.balance - sessionTemp.amount - fee) * 100) / 100;
-
-      // if balance becomes insufficient or zero, reset to 3000
-      if (backend.balance <= 0) {
-        backend.balance = 3000;
-      }
+      if (backend.balance <= 0) backend.balance = 3000;
 
       const newDaily = Math.round((dailyRemaining - sessionTemp.amount) * 100) / 100;
       setDailyRemaining(newDaily);
       saveBackend();
 
-      // timestamp formatting
       const now = new Date();
       const dd = String(now.getDate()).padStart(2,'0');
       const mm = String(now.getMonth()+1).padStart(2,'0');
@@ -864,9 +827,7 @@ if ('serviceWorker' in navigator) {
       let transcript = '';
       const underlinedDateTime = `<span style="text-decoration: underline;">${dd}/${mm}/${yy} at ${hours}:${minutes} ${ampm}</span>`;
       let underlinedPhone = '';
-      if (tpl === 'C' && sessionTemp.phone) {
-          underlinedPhone = ` <span style="text-decoration: underline;">${sessionTemp.phone}</span>`;
-      }
+      if (tpl === 'C' && sessionTemp.phone) underlinedPhone = ` <span style="text-decoration: underline;">${sessionTemp.phone}</span>`;
 
       if(tpl === 'C'){
           transcript = `${code} Confirmed. Ksh${Number(sessionTemp.amount).toFixed(2)} sent to ${sessionTemp.name}${underlinedPhone} on ${underlinedDateTime}. New M-PESA balance is Ksh${backend.balance.toFixed(2)}. Transaction cost, Ksh${fee.toFixed(2)}. Amount you can transact within the day is ${Number(newDaily).toFixed(2)}. See all your balances now https://saf.cx/kWQpy`;
@@ -899,19 +860,15 @@ if ('serviceWorker' in navigator) {
       sessionTemp = { phone:'', name:'', amount:0, pin:'', template:'C' };
     }
 
-    // CODE GENERATOR (Revised to LLL LLL D L D L)
     function generateCode(){
       const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
       const digits = '0123456789';
       let code = '';
-      
       const randChar = (set) => set.charAt(Math.floor(Math.random() * set.length));
-      
       const prefix = backend.codePrefix;
       code += prefix.charAt(0) || 'A';
       code += prefix.charAt(1) || 'B';
       code += prefix.charAt(2) || 'C';
-
       code += randChar(letters);
       code += randChar(letters);
       code += randChar(letters);
@@ -922,8 +879,6 @@ if ('serviceWorker' in navigator) {
       return code;
     }
 
-
-    // inbox rendering & conversation
     function renderInbox(){
       const list = $('#inboxList');
       list.innerHTML = '';
@@ -941,7 +896,6 @@ if ('serviceWorker' in navigator) {
       win.innerHTML = '';
       conv.forEach(m => {
         const card = document.createElement('div');
-        card.className = 'mpesa-card-item';
         renderMpesaCard(card, m);
         win.appendChild(card);
       });
@@ -964,18 +918,15 @@ if ('serviceWorker' in navigator) {
       const datePart = date.toLocaleDateString('en-GB');
       const timePart = date.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
       const payload = `${entry.phone} · ${entry.name} · Ksh${Number(entry.amount).toFixed(2)} · ${datePart} ${timePart} · ${entry.code} · Bal Ksh${Number(entry.balance).toFixed(2)}`;
-      
       const el = $('#topNotif');
       el.textContent = payload;
       el.classList.add('show');
-
       el.onclick = () => {
         renderInbox();
         show('receiverHome');
         el.classList.remove('show');
         el.onclick = null;
       };
-
       setTimeout(() => {
         el.classList.remove('show');
         el.onclick = null;
@@ -984,32 +935,24 @@ if ('serviceWorker' in navigator) {
 
     function triggerReceiverPopup(entry){ showTemporaryTopFull(entry); }
 
-
     const topNotif = document.getElementById('topNotif');
     topNotif.addEventListener('click', () => {
       show('receiverHome');
       topNotif.classList.remove('show');
     });
 
-
-    // init
     loadBackend();
     show('landing');
-
-    // debugging helpers
     window.backend = backend;
     window.getDailyRemaining = getDailyRemaining;
     window.saveBackend = saveBackend;
     window.loadBackend = loadBackend;
 
-    
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("service-worker.js")
-      .then(reg => console.log("Service worker registered:", reg))
-      .catch(err => console.error("Service worker registration failed:", err));
-  }
-
-
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("service-worker.js")
+        .then(reg => console.log("Service worker registered:", reg))
+        .catch(err => console.error("Service worker registration failed:", err));
+    }
   </script>
 </body>
 </html>
