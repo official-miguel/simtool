@@ -3,6 +3,7 @@
   'use strict';
 
   var STYLE_ID = 'mpesa-reference-styles';
+  var messageScale = 1;
 
   function decode(value) {
     var text = String(value == null ? '' : value);
@@ -25,7 +26,7 @@
 
   function clean(value) {
     return removeTransactionCode(decode(value)
-      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<br\s*\/?\s*>/gi, '\n')
       .replace(/<[^>]*>/g, '')
       .replace(/&nbsp;/gi, ' ')
       .replace(/\u00a0/g, ' ')
@@ -69,7 +70,7 @@
         align-items: center !important;
         gap: 12px !important;
         color: #edf5f0 !important;
-        font-size: 22px !important;
+        font-size: 16px !important;
         font-weight: 700 !important;
       }
       #conversationBaby .profile-avatar {
@@ -92,6 +93,29 @@
         padding: 12px 14px 130px !important;
         gap: 0 !important;
       }
+      .mpesa-zoom-controls {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-left: auto;
+      }
+      .mpesa-zoom-button {
+        width: 30px;
+        height: 30px;
+        border: 1px solid rgba(237, 245, 240, 0.4);
+        border-radius: 6px;
+        background: transparent;
+        color: #edf5f0;
+        cursor: pointer;
+        font-size: 20px;
+        line-height: 1;
+      }
+      .mpesa-zoom-level {
+        min-width: 38px;
+        color: #cbd9ce;
+        font-size: 11px;
+        text-align: center;
+      }
       .mpesa-card-item {
         width: min(100%, 560px);
         margin: 0 auto 10px;
@@ -106,7 +130,7 @@
         background: rgba(20, 40, 28, 0.9) !important;
         padding: 18px 18px 14px !important;
         color: #eaf2ed !important;
-        font-size: 15px !important;
+        font-size: calc(15px * var(--message-scale, 1)) !important;
         line-height: 1.4 !important;
         overflow-wrap: anywhere;
         letter-spacing: -0.01em;
@@ -230,9 +254,37 @@
     document.head.appendChild(style);
   }
 
+  function applyMessageScale() {
+    var chat = document.getElementById('chatWindow');
+    if (chat) chat.style.setProperty('--message-scale', messageScale);
+    var level = document.querySelector('.mpesa-zoom-level');
+    if (level) level.textContent = Math.round(messageScale * 100) + '%';
+  }
+
+  function addZoomControls() {
+    var navbar = document.querySelector('#conversationBaby .navbar');
+    if (!navbar || navbar.querySelector('.mpesa-zoom-controls')) return;
+
+    var controls = document.createElement('div');
+    controls.className = 'mpesa-zoom-controls';
+    controls.innerHTML = '<button class="mpesa-zoom-button" type="button" data-zoom="out" aria-label="Decrease message size">−</button>' +
+      '<span class="mpesa-zoom-level" aria-live="polite">100%</span>' +
+      '<button class="mpesa-zoom-button" type="button" data-zoom="in" aria-label="Increase message size">+</button>';
+    navbar.appendChild(controls);
+
+    controls.addEventListener('click', function (event) {
+      var button = event.target.closest('[data-zoom]');
+      if (!button) return;
+      messageScale = Math.max(0.8, Math.min(1.4, messageScale + (button.getAttribute('data-zoom') === 'in' ? 0.1 : -0.1)));
+      applyMessageScale();
+    });
+  }
+
   function renderMpesaCard(container, entry) {
     if (!container) return null;
     injectStyles();
+    addZoomControls();
+    applyMessageScale();
 
     var text = escapeHtml(clean(entry && entry.text))
       .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>')
