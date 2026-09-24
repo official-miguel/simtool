@@ -1,10 +1,10 @@
 {
-  "id": "./",
+  "id": "./index.html",
   "name": "Trick World",
   "short_name": "simtool-kit",
   "description": "Trick World offline web app",
-  "lang": "en",
-  "start_url": "./",
+  "lang": "en-US",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
@@ -12,7 +12,17 @@
   "theme_color": "#327acd",
   "prefer_related_applications": false,
   "icons": [
-    { "src": "./icons/icon-192.svg", "sizes": "192x192", "type": "image/svg+xml", "purpose": "any maskable" },
-    { "src": "./icons/icon-512.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any maskable" }
+    {
+      "src": "./man-avatar-profile-picture-illustration-vector.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "./man-avatar-profile-picture-illustration-vector.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
   ]
 }
