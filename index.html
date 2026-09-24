@@ -1,2 +1,52 @@
-
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#071425">
+  <link rel="manifest" href="./manifest.json">
+  <title>SIM Tool</title>
+  <style>
+    :root{--bg:#071425;--panel:#0d2031;--muted:#9aa4b2;--accent:#327acd;--text:#e6eef6}
+    *{box-sizing:border-box;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+    html,body{height:100%;margin:0;background:var(--bg);color:var(--text)}
+    body{overflow:hidden}.phone{height:100%;display:flex;flex-direction:column}.screen{flex:1;overflow:auto;padding:0 0 24px}
+    .page{min-height:100%}.hidden{display:none!important}.navbar{display:flex;align-items:center;gap:12px;padding:14px 16px;background:#0b1c2d;border-bottom:1px solid #183047;position:sticky;top:0;z-index:2}.back{border:0;background:transparent;color:#fff;font-size:32px;line-height:1;cursor:pointer;padding:0 8px}.nav-title{font-size:20px;font-weight:700}.list{padding:16px}.list-item{display:flex;justify-content:space-between;align-items:center;padding:17px 14px;margin-bottom:10px;border-radius:12px;background:rgba(255,255,255,.05);cursor:pointer}.row{display:flex;gap:10px;padding:16px}.row input{min-width:0;flex:1}.input{width:100%;padding:13px;border:1px solid #38506a;border-radius:9px;background:#081522;color:#fff;font-size:16px}.btn{border:0;border-radius:9px;padding:12px 18px;background:var(--accent);color:#fff;font-weight:700;cursor:pointer}.btn.secondary{background:transparent;border:1px solid #38506a}.small{padding:16px 16px 0;color:#fff;font-size:15px}.muted{color:var(--muted)}.landing{text-align:center;padding:48px 18px}.landing h1{margin:0 0 10px}.home{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:460px;margin:0 auto;padding:16px}.icon{padding:18px 8px;border-radius:12px;background:rgba(255,255,255,.05);text-align:center;cursor:pointer}.icon .label{display:block;margin-top:8px;color:var(--muted);font-size:13px}.profile-avatar{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:#f0c74d}.profile-avatar svg{width:28px}.confirm{margin:16px;padding:18px;background:rgba(255,255,255,.06);border-radius:12px;overflow-wrap:anywhere}.empty{padding:30px 16px;color:var(--muted);text-align:center}
+  </style>
+</head>
+<body>
+<div class="phone"><div id="mainIcons" class="home"><div id="senderIcon" class="icon">➤<span class="label">Send</span></div><div id="receiverIcon" class="icon">▢<span class="label">Messages</span></div><div id="resetIcon" class="icon">↻<span class="label">Reset</span></div></div>
+<main id="screen" class="screen">
+<section id="landing" class="page landing"><h1>SIM Tool</h1><p class="muted">Offline M-PESA simulator</p></section>
+<section id="senderHome" class="page hidden"><div class="navbar"><button class="back" data-back="landing">‹</button><span class="nav-title">M-PESA</span></div><div class="list"><div id="openSend" class="list-item">Send Money <span>›</span></div></div></section>
+<section id="sendPhone" class="page hidden"><div class="navbar"><button class="back" data-back="senderHome">‹</button><span class="nav-title">Send Money</span></div><div class="small">Enter phone number</div><div class="row"><input id="phone" class="input" inputmode="numeric" maxlength="12"><button id="phoneNext" class="btn">Next</button></div></section>
+<section id="sendAmount" class="page hidden"><div class="navbar"><button class="back" data-back="sendPhone">‹</button><span class="nav-title">Enter Amount</span></div><div class="row"><input id="amount" class="input" type="number" min="0.01" step="0.01" placeholder="Amount"><button id="amountNext" class="btn">Next</button></div></section>
+<section id="sendPin" class="page hidden"><div class="navbar"><button class="back" data-back="sendAmount">‹</button><span class="nav-title">Enter PIN</span></div><div class="row"><input id="pin" class="input" type="password" inputmode="numeric" maxlength="4" placeholder="4-digit PIN"><button id="pinNext" class="btn">Next</button></div></section>
+<section id="sendName" class="page hidden"><div class="navbar"><button class="back" data-back="sendPin">‹</button><span class="nav-title">Recipient</span></div><div class="row"><input id="name" class="input" maxlength="60" placeholder="Recipient name"><button id="send" class="btn">Send</button></div></section>
+<section id="confirm" class="page hidden"><div class="navbar"><button class="back" data-back="landing">‹</button><span class="nav-title">Sent</span></div><div id="confirmText" class="confirm"></div></section>
+<section id="inbox" class="page hidden"><div class="navbar"><button class="back" data-back="landing">‹</button><span class="nav-title">Messages</span></div><div id="inboxList" class="list"></div></section>
+<section id="conversationBaby" class="page hidden"><div class="navbar"><button class="back" data-back="inbox">‹</button><div class="profile-avatar"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><span class="nav-title">MPESA</span></div><div id="chatWindow"></div><div class="dont-reply-footer">Can't reply to this short code. <a href="#">Learn more</a></div></section>
+</main></div>
 <script src="./mpesa-card.js"></script>
+<script>
+(function(){'use strict';
+const $=id=>document.getElementById(id); const pages=[...document.querySelectorAll('.page')];
+const KEY='simtool-production-v1'; const DAILY=500000;
+let state={balance:3000,messages:[],daily:DAILY,date:''}; let flow={};
+function today(){return new Date().toISOString().slice(0,10)}
+function load(){try{const saved=JSON.parse(localStorage.getItem(KEY)||'null');if(saved)state=Object.assign(state,saved)}catch(e){}if(state.date!==today()){state.date=today();state.daily=DAILY;save()}}
+function save(){localStorage.setItem(KEY,JSON.stringify(state))}
+function show(id){pages.forEach(p=>p.classList.toggle('hidden',p.id!==id));$('mainIcons').classList.toggle('hidden',id!=='landing');$('screen').scrollTop=0}
+function reset(){flow={};['phone','amount','pin','name'].forEach(id=>$(id).value='')}
+function renderInbox(){const el=$('inboxList');el.innerHTML='';if(!state.messages.length){el.innerHTML='<div class="empty">No messages yet.</div>';return}const item=document.createElement('div');item.className='list-item';item.innerHTML='<span><strong>M-PESA</strong><br><span class="muted">'+state.messages.length+' message'+(state.messages.length===1?'':'s')+'</span></span><span>›</span>';item.onclick=openConversation;el.appendChild(item)}
+function openConversation(){const win=$('chatWindow');win.innerHTML='';state.messages.forEach(entry=>{const holder=document.createElement('div');window.renderMpesaCard(holder,entry);win.appendChild(holder)});show('conversationBaby');setTimeout(()=>win.scrollTop=win.scrollHeight,0)}
+function validPhone(v){return /^\d{9,12}$/.test(v)}
+$('senderIcon').onclick=()=>{reset();show('senderHome')};$('openSend').onclick=()=>show('sendPhone');$('receiverIcon').onclick=()=>{renderInbox();show('inbox')};$('resetIcon').onclick=()=>{if(confirm('Clear all saved messages and reset the balance?')){state={balance:3000,messages:[],daily:DAILY,date:today()};save();show('landing')}};
+document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>show(b.dataset.back));
+$('phoneNext').onclick=()=>{const v=$('phone').value.trim();if(!validPhone(v))return alert('Enter a valid 9-12 digit phone number.');flow.phone=v;show('sendAmount')};
+$('amountNext').onclick=()=>{const v=Number($('amount').value);if(!Number.isFinite(v)||v<=0)return alert('Enter a valid amount.');if(v>state.daily)return alert('Amount exceeds the daily transaction limit.');flow.amount=Math.round(v*100)/100;show('sendPin')};
+$('pinNext').onclick=()=>{if(!/^\d{4}$/.test($('pin').value.trim()))return alert('PIN must be exactly 4 digits.');show('sendName')};
+$('send').onclick=()=>{const name=$('name').value.trim();if(!name)return alert('Enter the recipient name.');const now=new Date();const fee=10;state.balance=Math.round((state.balance-flow.amount-fee)*100)/100;if(state.balance<0)return alert('Insufficient balance.');state.daily=Math.round((state.daily-flow.amount)*100)/100;const entry={text:'Confirmed. Ksh'+flow.amount.toFixed(2)+' sent to '+name+' '+flow.phone+' on '+now.toLocaleDateString('en-GB')+' at '+now.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+'. New M-PESA balance is Ksh'+state.balance.toFixed(2)+'. Transaction cost, Ksh'+fee.toFixed(2)+'. Amount you can transact within the day is '+state.daily.toFixed(2)+'. See all your balances now https://saf.cx/kWQpy',ts:now.getTime(),name:name,phone:flow.phone,amount:flow.amount.toFixed(2),balance:state.balance.toFixed(2)};state.messages.push(entry);save();$('confirmText').textContent='Your M-PESA message was sent successfully.';reset();show('confirm')};
+load();show('landing');if('serviceWorker' in navigator)navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
+})();
+</script></body></html>
