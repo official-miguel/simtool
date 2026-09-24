@@ -229,9 +229,24 @@
         </div>
       </section>
 
-      <section id="sendPhone" class="page">
+      <section id="senderBpage" class="page">
         <div class="navbar">
           <button class="back" type="button" data-back="senderHome">‹</button>
+          <div class="nav-title">M-PESA</div>
+        </div>
+        <div class="list">
+          <div id="itemC" class="list-item"><span>Send Money</span><span>›</span></div>
+          <div class="list-item"><span>Withdraw Cash</span><span>›</span></div>
+          <div class="list-item"><span>Buy Airtime</span><span>›</span></div>
+          <div class="list-item"><span>Loans and Savings</span><span>›</span></div>
+          <div id="itemG" class="list-item"><span>Lipa na M-PESA</span><span>›</span></div>
+          <div class="list-item"><span>My Account</span><span>›</span></div>
+        </div>
+      </section>
+
+      <section id="sendPhone" class="page">
+        <div class="navbar">
+          <button class="back" type="button" data-back="senderBpage">‹</button>
           <div class="nav-title">Send Money</div>
         </div>
         <div class="small">Enter phone number</div>
@@ -421,6 +436,14 @@
       });
 
       document.getElementById('openSend').addEventListener('click', function () {
+        show('senderBpage');
+      });
+
+      document.getElementById('itemC').addEventListener('click', function () {
+        show('sendPhone');
+      });
+
+      document.getElementById('itemG').addEventListener('click', function () {
         show('sendPhone');
       });
 
