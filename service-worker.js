@@ -1,13 +1,15 @@
-const CACHE_NAME = 'simtool-pwa-v5';
-const OFFLINE_URL = '/offline.html';
+const CACHE_NAME = 'simtool-pwa-v6';
+const OFFLINE_URL = './offline.html';
 
+// Keep these paths relative so the app works on GitHub Pages project URLs
+// such as /simtool/, not only at the domain root.
 const APP_SHELL = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  OFFLINE_URL,
-  '/icons/icon-192.svg',
-  '/icons/icon-512.svg'
+  './',
+  './index.html',
+  './manifest.json',
+  './offline.html',
+  './icons/icon-192.svg',
+  './icons/icon-512.svg'
 ];
 
 self.addEventListener('install', event => {
