@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Users | Trick World Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="icons/tw-favicon.png">
+  <link rel="stylesheet" href="tw-auth.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="tw.js"></script>
+</head>
+<body class="is-loading">
+  <div class="app">
+    <aside class="sidebar">
+      <a class="brand" data-brand href="superadmin.html" aria-label="Trick World"></a>
+      <div class="nav-label">Super admin</div>
+      <nav class="nav">
+        <a class="on" href="superadmin.html"><span data-icon="users"></span><span>Users</span><span class="count" id="navCount">0</span></a>
+      </nav>
+      <div class="side-user">
+        <div class="avatar sm" id="meAvatar"></div>
+        <div class="side-user-text">
+          <div class="side-user-name">Super admin</div>
+          <div class="side-user-email" id="me"></div>
+        </div>
+        <button class="icon-btn" id="logout" title="Log out" aria-label="Log out"><span data-icon="logout"></span></button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="page-head">
+        <div>
+          <h1>Users</h1>
+          <p>Everyone who has signed up, with their activation codes.</p>
+        </div>
+        <button class="btn btn-secondary" id="refresh"><span data-icon="refresh"></span><span>Refresh</span></button>
+      </div>
+
+      <section class="kpis">
+        <div class="kpi"><div class="kpi-label">Total users</div><div class="kpi-value" id="k-all">0</div></div>
+        <div class="kpi"><div class="kpi-label"><span class="dot" style="background:#17b26a"></span>Active</div><div class="kpi-value" id="k-active">0</div></div>
+        <div class="kpi"><div class="kpi-label"><span class="dot" style="background:#f79009"></span>Waiting for code</div><div class="kpi-value" id="k-inactive">0</div></div>
+        <div class="kpi"><div class="kpi-label"><span class="dot" style="background:#2f54eb"></span>Online now</div><div class="kpi-value" id="k-online">0</div></div>
+      </section>
+
+      <section class="content">
+        <div class="card table-card">
+          <div class="table-toolbar">
+            <div class="seg" id="filter">
+              <button data-f="all" class="on">All <span class="n" id="n-all"></span></button>
+              <button data-f="inactive">Waiting <span class="n" id="n-inactive"></span></button>
+              <button data-f="active">Active <span class="n" id="n-active"></span></button>
+              <button data-f="online">Online <span class="n" id="n-online"></span></button>
+            </div>
+            <label class="search"><span data-icon="search"></span>
+              <input id="q" type="search" placeholder="Search by name, email, phone or code" autocomplete="off" aria-label="Search users">
+            </label>
+          </div>
+
+          <table class="users">
+            <thead>
+              <tr><th>User</th><th>Phone</th><th>Activation code</th><th>Status</th><th>Device</th><th><span class="sr-only">Actions</span></th></tr>
+            </thead>
+            <tbody id="rows"></tbody>
+          </table>
+
+          <div class="empty" id="empty" hidden>
+            <div class="empty-icon"><span data-icon="users" data-size="20"></span></div>
+            <h3 id="emptyTitle"></h3>
+            <p id="emptyText"></p>
+          </div>
+          <div class="table-foot" id="tfoot"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    (async function () {
+      const { esc, icon, toast, sb } = TW;
+      const st = await TW.guard({ need: "admin" });
+      document.getElementById("me").textContent = st.email || "";
+      document.getElementById("meAvatar").textContent = (st.email || "A")[0].toUpperCase();
+      document.getElementById("logout").onclick = TW.logout;
+
+      const rowsEl = document.getElementById("rows");
+      const emptyEl = document.getElementById("empty");
+      const ONLINE_MS = 2 * 60 * 1000;
+      let users = [];
+      let loaded = false;
+      let filter = "all";
+      let query = "";
+      let busyUi = false; // a dialog or menu is open
+
+      const isOnline = (u) => u.has_session && u.last_seen && Date.now() - new Date(u.last_seen) < ONLINE_MS;
+      const isNew = (u) => Date.now() - new Date(u.created_at) < 24 * 3600 * 1000;
+      const initials = (u) =>
+        ((u.full_name || u.email || "?").trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join("") || "?").toUpperCase();
+      function ago(ts) {
+        const s = Math.max(0, (Date.now() - new Date(ts)) / 1000);
+        if (s < 60) return "just now";
+        if (s < 3600) return Math.floor(s / 60) + " min ago";
+        if (s < 86400) return Math.floor(s / 3600) + " hr ago";
+        if (s < 86400 * 30) return Math.floor(s / 86400) + (s < 86400 * 2 ? " day ago" : " days ago");
+        return new Date(ts).toLocaleDateString();
+      }
+
+      async function load() {
+        const { data, error } = await sb.rpc("tw_admin_list_users");
+        if (error) { toast(TW.friendlyError(error), "error"); return; }
+        users = data || [];
+        loaded = true;
+        render();
+      }
+
+      function matches(u) {
+        if (filter === "active" && !u.is_active) return false;
+        if (filter === "inactive" && (u.is_active || u.is_admin)) return false;
+        if (filter === "online" && !isOnline(u)) return false;
+        if (!query) return true;
+        return [u.full_name, u.email, u.phone, u.code].join(" ").toLowerCase().includes(query);
+      }
+
+      function render() {
+        const counts = {
+          all: users.length,
+          active: users.filter((u) => u.is_active).length,
+          inactive: users.filter((u) => !u.is_active && !u.is_admin).length,
+          online: users.filter(isOnline).length,
+        };
+        for (const k in counts) {
+          document.getElementById("k-" + k).textContent = counts[k];
+          document.getElementById("n-" + k).textContent = counts[k];
+        }
+        document.getElementById("navCount").textContent = counts.all;
+
+        const list = users.filter(matches);
+        rowsEl.innerHTML = list.map(row).join("");
+        emptyEl.hidden = list.length > 0;
+        document.getElementById("emptyTitle").textContent = users.length ? "No matching users" : "No users yet";
+        document.getElementById("emptyText").textContent = users.length
+          ? "Try a different search or filter."
+          : "When someone signs up, they'll appear here with their activation code.";
+        document.getElementById("tfoot").textContent = list.length
+          ? `Showing ${list.length} of ${users.length} ${users.length === 1 ? "user" : "users"}`
+          : "";
+        document.getElementById("tfoot").hidden = !list.length;
+      }
+
+      function row(u) {
+        const online = isOnline(u);
+        const status = u.is_active
+          ? '<span class="badge ok">Active</span>'
+          : u.is_admin ? '<span class="badge neutral">Super admin</span>' : '<span class="badge warn">Waiting for code</span>';
+        const codeState = !u.code ? "" : u.code_used ? "Used" : "Not used yet";
+        const tries = u.attempts ? ` · ${u.attempts} wrong ${u.attempts === 1 ? "try" : "tries"}` : "";
+        const device = u.has_session
+          ? `<div><span class="online ${online ? "on" : ""}"></span>${esc(u.device_info || "Unknown device")}</div>
+             <div class="u-sub">${online ? "Online now" : u.last_seen ? "Last seen " + ago(u.last_seen) : ""}</div>`
+          : `<div class="u-sub">Not logged in</div>`;
+
+        return `<tr data-id="${u.id}">
+          <td data-label="User"><div class="user-cell">
+            <div class="avatar">${esc(initials(u))}</div>
+            <div style="min-width:0">
+              <div class="u-name">${esc(u.full_name || "No name")}${isNew(u) ? '<span class="badge brand">New</span>' : ""}</div>
+              <div class="u-sub">${esc(u.email || "")}</div>
+            </div>
+          </div></td>
+          <td data-label="Phone"><div class="cell">${u.phone ? esc(u.phone) : '<span class="u-sub">-</span>'}</div></td>
+          <td data-label="Activation code"><div class="cell">
+            ${u.code
+              ? `<span class="code-chip"><span class="mono">${esc(u.code)}</span><button class="icon-btn" data-act="copy" title="Copy code" aria-label="Copy code">${icon("copy", 14)}</button></span>
+                 <div class="u-sub" style="margin-top:4px">${codeState}${tries}</div>`
+              : '<span class="u-sub">No code</span>'}
+          </div></td>
+          <td data-label="Status"><div class="cell">${status}</div></td>
+          <td data-label="Device"><div class="cell">${device}</div></td>
+          <td class="actions"><div class="actions-inner">
+            <button class="btn btn-sm ${u.is_active ? "btn-secondary" : "btn-primary"}" data-act="toggle">${u.is_active ? "Deactivate" : "Activate"}</button>
+            <button class="icon-btn bordered" data-act="more" title="More actions" aria-label="More actions">${icon("more")}</button>
+          </div></td>
+        </tr>`;
+      }
+
+      // ---------- row menu ----------
+      const menu = document.createElement("div");
+      menu.className = "menu";
+      menu.hidden = true;
+      document.body.appendChild(menu);
+      let menuUser = null;
+
+      function openMenu(btn, u) {
+        menuUser = u;
+        busyUi = true;
+        const first = (u.full_name || "").split(" ")[0];
+        menu.innerHTML = `
+          <button data-m="copy" ${u.code ? "" : "disabled"}>${icon("copy")}Copy code</button>
+          <button data-m="code">${icon("key")}Make new code</button>
+          ${u.phone ? `<a data-m="wa" href="${TW.waLink("Hello " + first + ", ", u.phone)}" target="_blank" rel="noopener">${icon("message")}Message on WhatsApp</a>` : ""}
+          <div class="menu-sep"></div>
+          <button data-m="logout" class="danger" ${u.has_session ? "" : "disabled"}>${icon("power")}Log out device</button>`;
+        menu.hidden = false;
+        const r = btn.getBoundingClientRect();
+        const mw = menu.offsetWidth, mh = menu.offsetHeight;
+        let top = r.bottom + 6;
+        if (top + mh > innerHeight - 8) top = Math.max(8, r.top - mh - 6);
+        menu.style.top = top + "px";
+        menu.style.left = Math.max(8, Math.min(r.right - mw, innerWidth - mw - 8)) + "px";
+      }
+      function closeMenu() {
+        if (menu.hidden) return;
+        menu.hidden = true;
+        menuUser = null;
+        busyUi = false;
+      }
+      document.addEventListener("click", (e) => {
+        if (!menu.contains(e.target) && !e.target.closest('[data-act="more"]')) closeMenu();
+      });
+      document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeMenu(); });
+      window.addEventListener("scroll", closeMenu, true);
+      window.addEventListener("resize", closeMenu);
+      menu.addEventListener("click", (e) => {
+        const item = e.target.closest("[data-m]");
+        if (!item || item.disabled) return;
+        const u = menuUser;
+        closeMenu();
+        if (item.dataset.m !== "wa") act(item.dataset.m, u, null);
+      });
+
+      // ---------- dialogs ----------
+      function modal(html, onMount) {
+        return new Promise((resolve) => {
+          const m = document.createElement("div");
+          m.className = "modal";
+          m.innerHTML = `<div class="modal-card" role="dialog" aria-modal="true">${html}</div>`;
+          document.body.appendChild(m);
+          busyUi = true;
+          const close = (v) => {
+            m.remove();
+            busyUi = false;
+            document.removeEventListener("keydown", onKey);
+            resolve(v);
+          };
+          const onKey = (e) => { if (e.key === "Escape") close(false); };
+          document.addEventListener("keydown", onKey);
+          m.addEventListener("click", (e) => {
+            if (e.target === m) return close(false);
+            const b = e.target.closest("[data-d]");
+            if (b) close(b.dataset.d === "ok");
+          });
+          if (onMount) onMount(m);
+          setTimeout(() => m.querySelector("[data-d=ok]")?.focus(), 20);
+        });
+      }
+
+      const confirmBox = ({ title, body, ok, danger }) =>
+        modal(`<h2>${esc(title)}</h2><p>${esc(body)}</p>
+          <div class="modal-actions">
+            <button class="btn btn-secondary" data-d="cancel">Cancel</button>
+            <button class="btn ${danger ? "btn-danger" : "btn-primary"}" data-d="ok">${esc(ok)}</button>
+          </div>`);
+
+      function showCode(u, code) {
+        const first = (u.full_name || "").split(" ")[0];
+        const msg = `Hello ${first}, your Trick World activation code is ${code}\n\nLog in and enter it on the activation page.`;
+        return modal(`<h2>New activation code</h2>
+          <p>For ${esc(u.full_name || u.email)}. Their old code no longer works.</p>
+          <div class="big-code">${esc(code)}</div>
+          <div class="modal-actions">
+            <button class="btn btn-secondary" data-copy>${icon("copy")}<span>Copy</span></button>
+            ${u.phone ? `<a class="btn btn-wa" target="_blank" rel="noopener" href="${TW.waLink(msg, u.phone)}">${icon("message")}<span>Send on WhatsApp</span></a>` : ""}
+            <button class="btn btn-primary" data-d="ok">Done</button>
+          </div>`, (m) => {
+          m.querySelector("[data-copy]").onclick = () => copy(code);
+        });
+      }
+
+      async function copy(text) {
+        try { await navigator.clipboard.writeText(text); }
+        catch (e) {
+          const t = document.createElement("textarea");
+          t.value = text; document.body.appendChild(t); t.select();
+          document.execCommand("copy"); t.remove();
+        }
+        toast("Copied " + text);
+      }
+
+      async function run(btn, fn, args, okMsg) {
+        TW.setLoading(btn, true);
+        const { data, error } = await sb.rpc(fn, args);
+        TW.setLoading(btn, false);
+        if (error) { toast(TW.friendlyError(error), "error"); return null; }
+        if (okMsg) toast(okMsg);
+        await load();
+        return data ?? true;
+      }
+
+      // ---------- actions ----------
+      async function act(action, u, btn) {
+        const who = u.full_name || u.email;
+        const isMe = u.email === st.email;
+        switch (action) {
+          case "copy":
+            if (u.code) copy(u.code);
+            break;
+
+          case "toggle":
+            if (u.is_active) {
+              const yes = await confirmBox({
+                title: "Deactivate " + who + "?",
+                body: "They'll be sent to the activation page and will need a new code to use Trick World again.",
+                ok: "Deactivate", danger: true,
+              });
+              if (yes) run(btn, "tw_admin_set_active", { p_user: u.id, p_active: false }, who + " deactivated");
+            } else {
+              run(btn, "tw_admin_set_active", { p_user: u.id, p_active: true }, who + " activated");
+            }
+            break;
+
+          case "code": {
+            if (u.code && !u.code_used) {
+              const yes = await confirmBox({
+                title: "Make a new code?",
+                body: who + " has a code that hasn't been used yet. A new code will replace it.",
+                ok: "Make new code",
+              });
+              if (!yes) return;
+            }
+            const code = await run(btn, "tw_admin_new_code", { p_user: u.id });
+            if (code) showCode(u, code);
+            break;
+          }
+
+          case "logout": {
+            const yes = await confirmBox({
+              title: isMe ? "Log yourself out?" : "Log out " + who + "?",
+              body: isMe
+                ? "This will end your session on this device."
+                : "They'll be logged out of " + (u.device_info || "their device") + " within a few seconds.",
+              ok: "Log out device", danger: true,
+            });
+            if (yes) run(btn, "tw_admin_logout_device", { p_user: u.id }, "Device logged out");
+            break;
+          }
+        }
+      }
+
+      rowsEl.addEventListener("click", (e) => {
+        const b = e.target.closest("[data-act]");
+        if (!b || b.disabled) return;
+        const u = users.find((x) => x.id === b.closest("tr").dataset.id);
+        if (!u) return;
+        if (b.dataset.act === "more") {
+          if (!menu.hidden && menuUser && menuUser.id === u.id) closeMenu();
+          else openMenu(b, u);
+          return;
+        }
+        act(b.dataset.act, u, b);
+      });
+
+      document.getElementById("q").addEventListener("input", (e) => { query = e.target.value.trim().toLowerCase(); if (loaded) render(); });
+      document.getElementById("filter").addEventListener("click", (e) => {
+        const b = e.target.closest("button[data-f]");
+        if (!b) return;
+        filter = b.dataset.f;
+        document.querySelectorAll("#filter button").forEach((x) => x.classList.toggle("on", x === b));
+        if (loaded) render();
+      });
+      document.getElementById("refresh").addEventListener("click", async (e) => {
+        const b = e.currentTarget;
+        TW.setLoading(b, true);
+        await load();
+        TW.setLoading(b, false);
+      });
+
+      await load();
+      setInterval(() => { if (!busyUi && document.visibilityState === "visible") load(); }, 30000);
+    })();
+  </script>
+</body>
+</html>

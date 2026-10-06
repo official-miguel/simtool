@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign up | Trick World</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="icons/tw-favicon.png">
+  <link rel="stylesheet" href="tw-auth.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="tw.js"></script>
+</head>
+<body>
+  <div class="auth">
+    <header class="auth-top">
+      <a class="brand" data-brand href="login.html" aria-label="Trick World"></a>
+      <div class="auth-alt"><span class="hide-sm">Already have an account?</span><a class="btn btn-secondary btn-sm" href="login.html">Log in</a></div>
+    </header>
+
+    <main class="auth-main">
+    <div class="card auth-card" id="formView">
+      <img class="auth-logo" src="icons/tw-logo.png" alt="Trick World">
+      <div class="card-head">
+        <h1>Create your account</h1>
+        <p>Sign up, then activate your account with a code to start using Trick World.</p>
+      </div>
+
+      <div id="notice" hidden></div>
+
+      <form id="form" novalidate>
+        <div class="row-2">
+          <div class="field" data-f="name">
+            <label for="name">Full name</label>
+            <input id="name" name="name" type="text" autocomplete="name" required>
+            <span class="field-error"></span>
+          </div>
+          <div class="field" data-f="phone">
+            <label for="phone">Phone (WhatsApp)</label>
+            <input id="phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" required>
+            <span class="field-error"></span>
+          </div>
+        </div>
+        <div class="field" data-f="email">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" autocomplete="email" inputmode="email" required>
+          <span class="field-error"></span>
+        </div>
+        <div class="field" data-f="password">
+          <label for="password">Password</label>
+          <div class="pw">
+            <input id="password" name="password" type="password" autocomplete="new-password" required>
+            <button type="button" class="pw-toggle" aria-label="Show or hide password"></button>
+          </div>
+          <span class="field-help">At least 8 characters.</span>
+          <span class="field-error"></span>
+        </div>
+        <div class="field" data-f="confirm">
+          <label for="confirm">Confirm password</label>
+          <input id="confirm" name="confirm" type="password" autocomplete="new-password" required>
+          <span class="field-error"></span>
+        </div>
+        <button class="btn btn-primary btn-block" type="submit"><span>Create account</span></button>
+      </form>
+    </div>
+
+    <div class="card auth-card" id="checkEmail" hidden>
+      <div class="card-head">
+        <h1>Check your email</h1>
+        <p>We sent a confirmation link to <b id="sentTo"></b>. Open it, then log in to activate your account.</p>
+      </div>
+      <a href="login.html" class="btn btn-secondary btn-block">Go to log in</a>
+    </div>
+    </main>
+
+    <footer class="auth-foot">
+      <span>&copy; <span data-year></span> Trick World</span>
+      <a data-support>Need help? WhatsApp 0753 636 034</a>
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      TW.redirectIfSignedIn();
+
+      const form = document.getElementById("form");
+      const noticeEl = document.getElementById("notice");
+
+      function setErr(name, msg) {
+        const f = form.querySelector(`[data-f="${name}"]`);
+        f.classList.toggle("invalid", !!msg);
+        f.querySelector(".field-error").textContent = msg || "";
+        return !msg;
+      }
+      form.addEventListener("input", (e) => {
+        const f = e.target.closest(".field");
+        if (f && f.classList.contains("invalid")) setErr(f.dataset.f, "");
+      });
+
+      // Accepts 07.., 01.., 2547.., +2547.., 7.. and stores it as 07XXXXXXXX
+      function normalizePhone(raw) {
+        let d = String(raw).replace(/\D/g, "");
+        if (d.startsWith("254")) d = d.slice(3);
+        if (d.startsWith("0")) d = d.slice(1);
+        return /^[17]\d{8}$/.test(d) ? "0" + d : null;
+      }
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        noticeEl.hidden = true;
+        const name = form.elements.name.value.trim().replace(/\s+/g, " ");
+        const phone = normalizePhone(form.phone.value);
+        const email = form.email.value.trim().toLowerCase();
+        const password = form.password.value;
+
+        const ok = [
+          setErr("name", name.length >= 2 ? "" : "Enter your full name."),
+          setErr("phone", phone ? "" : "Enter a valid phone number, for example 07XX XXX XXX."),
+          setErr("email", /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) ? "" : "Enter a valid email address."),
+          setErr("password", password.length >= 8 ? "" : "Use at least 8 characters."),
+          setErr("confirm", form.confirm.value === password ? "" : "Passwords don't match."),
+        ].every(Boolean);
+        if (!ok) { form.querySelector(".invalid input")?.focus(); return; }
+
+        const btn = form.querySelector("button[type=submit]");
+        TW.setLoading(btn, true);
+        try {
+          const { data, error } = await TW.sb.auth.signUp({
+            email, password,
+            options: {
+              data: { full_name: name, phone },
+              emailRedirectTo: new URL(TW.config.LOGIN_PAGE + "?reason=confirmed", location.href).href,
+            },
+          });
+          if (error) throw error;
+          // Supabase returns a user with no identities when the email is already taken.
+          if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+            throw new Error("already registered");
+          }
+          if (data.session) {
+            await TW.claimSession();
+            TW.go(TW.config.ACTIVATE_PAGE);
+          } else {
+            document.getElementById("sentTo").textContent = email;
+            document.getElementById("formView").hidden = true;
+            document.getElementById("checkEmail").hidden = false;
+          }
+        } catch (err) {
+          TW.notice(noticeEl, TW.friendlyError(err), "err");
+          TW.setLoading(btn, false);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

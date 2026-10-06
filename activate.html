@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Activate account | Trick World</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="icons/tw-favicon.png">
+  <link rel="stylesheet" href="tw-auth.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="tw.js"></script>
+</head>
+<body class="is-loading">
+  <div class="auth">
+    <header class="auth-top">
+      <a class="brand" data-brand href="#" aria-label="Trick World"></a>
+      <button class="btn btn-secondary btn-sm" id="logout"><span data-icon="logout" data-size="15"></span><span>Log out</span></button>
+    </header>
+
+    <main class="auth-main">
+      <div class="card auth-card" id="activateView">
+        <div class="progress" aria-label="Step 2 of 3">
+          <div class="done">Account created</div>
+          <div class="now">Activate</div>
+          <div>Start using Trick World</div>
+        </div>
+
+        <div class="card-head">
+          <h1>Activate your account</h1>
+          <p>Enter the 8-character activation code for your account.</p>
+        </div>
+
+        <form id="form" novalidate autocomplete="off">
+          <div class="field">
+            <span class="label" id="codeLabel">Activation code</span>
+            <div class="code-boxes" id="boxes" role="group" aria-labelledby="codeLabel"></div>
+          </div>
+          <div class="code-error" id="codeErr" aria-live="polite"></div>
+          <button class="btn btn-primary btn-block" type="submit"><span>Activate account</span></button>
+        </form>
+
+        <div class="ask">
+          <p class="ask-title">Don't have a code?</p>
+          <p>Message us on WhatsApp at <b id="waNumber"></b> and we'll send you one.</p>
+          <a id="wa" class="btn btn-wa btn-block" target="_blank" rel="noopener"><span data-icon="message"></span><span>Ask for a code on WhatsApp</span></a>
+        </div>
+
+        <p class="signed-in">Signed in as <b id="email"></b></p>
+      </div>
+
+      <div class="card auth-card" id="successView" hidden>
+        <div class="done-icon"><span data-icon="check" data-size="22"></span></div>
+        <div class="card-head" style="margin:0">
+          <h1>Account activated</h1>
+          <p>Taking you to Trick World...</p>
+        </div>
+      </div>
+    </main>
+
+    <footer class="auth-foot">
+      <span>&copy; <span data-year></span> Trick World</span>
+      <a data-support>Need help? WhatsApp 0753 636 034</a>
+    </footer>
+  </div>
+
+  <script>
+    (async function () {
+      const C = TW.config;
+      const successView = document.getElementById("successView");
+      const activateView = document.getElementById("activateView");
+
+      function done() {
+        activateView.hidden = true;
+        successView.hidden = false;
+        setTimeout(() => TW.go(C.HOME_PAGE), 1200);
+      }
+
+      // If the super admin activates this user while the page is open, move on straight away.
+      const st = await TW.guard({
+        need: "any",
+        onChange: (s) => { if (s.is_active && successView.hidden) done(); },
+      });
+      if (st.is_active) return TW.go(TW.routeFor(st));
+
+      document.getElementById("email").textContent = st.email || "";
+      const local = String(C.WHATSAPP_NUMBER).replace(/\D/g, "");
+      document.getElementById("waNumber").textContent = local.replace(/^(\d{4})(\d{3})(\d{3})$/, "$1 $2 $3");
+      document.getElementById("wa").href = TW.waLink(
+        `Hello, I've created a Trick World account and I need an activation code.\nName: ${st.full_name || ""}\nEmail: ${st.email || ""}`
+      );
+      document.getElementById("logout").onclick = TW.logout;
+
+      // ----- 8 code boxes with auto-advance + paste -----
+      const LEN = 8;
+      const boxesEl = document.getElementById("boxes");
+      const errEl = document.getElementById("codeErr");
+      const form = document.getElementById("form");
+      const inputs = [];
+      for (let i = 0; i < LEN; i++) {
+        if (i === 4) { const s = document.createElement("span"); s.className = "sep"; s.textContent = "-"; boxesEl.appendChild(s); }
+        const inp = document.createElement("input");
+        inp.type = "text";
+        inp.maxLength = 1;
+        inp.autocapitalize = "characters";
+        inp.spellcheck = false;
+        inp.setAttribute("aria-label", "Character " + (i + 1));
+        boxesEl.appendChild(inp);
+        inputs.push(inp);
+      }
+      const clean = (s) => String(s).toUpperCase().replace(/[^A-Z0-9]/g, "");
+      const code = () => inputs.map((i) => i.value).join("");
+
+      function fill(from, text) {
+        let i = from;
+        for (const ch of clean(text)) { if (i >= LEN) break; inputs[i++].value = ch; }
+        inputs[Math.min(i, LEN - 1)].focus();
+        if (code().length === LEN) form.requestSubmit();
+      }
+
+      inputs.forEach((inp, i) => {
+        inp.addEventListener("input", () => {
+          errEl.textContent = "";
+          const v = clean(inp.value);
+          inp.value = "";
+          if (v) fill(i, v);
+        });
+        inp.addEventListener("keydown", (e) => {
+          if (e.key === "Backspace" && !inp.value && i > 0) { inputs[i - 1].value = ""; inputs[i - 1].focus(); e.preventDefault(); }
+          else if (e.key === "ArrowLeft" && i > 0) inputs[i - 1].focus();
+          else if (e.key === "ArrowRight" && i < LEN - 1) inputs[i + 1].focus();
+        });
+        inp.addEventListener("paste", (e) => { e.preventDefault(); fill(i, (e.clipboardData || window.clipboardData).getData("text")); });
+        inp.addEventListener("focus", () => inp.select());
+      });
+      inputs[0].focus();
+
+      function fail(msg) {
+        errEl.textContent = msg;
+        boxesEl.classList.remove("shake");
+        void boxesEl.offsetWidth;
+        boxesEl.classList.add("shake");
+        inputs.forEach((i) => (i.value = ""));
+        inputs[0].focus();
+      }
+
+      let submitting = false;
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (submitting) return;
+        const value = code();
+        if (value.length < LEN) return fail("Enter all 8 characters of the code.");
+        const btn = form.querySelector("button[type=submit]");
+        submitting = true;
+        TW.setLoading(btn, true);
+        try {
+          const { data, error } = await TW.sb.rpc("tw_activate", { p_code: value });
+          if (error) throw error;
+          if (data.ok) return done();
+          const msgs = {
+            invalid: `That code is wrong. ${data.left} ${data.left === 1 ? "try" : "tries"} left.`,
+            locked: "Too many wrong tries. Ask for a new code on WhatsApp.",
+            used: "This code has already been used. Ask for a new one on WhatsApp.",
+            no_code: "There's no code for your account yet. Ask for one on WhatsApp.",
+          };
+          fail(msgs[data.reason] || "Couldn't activate. Please try again.");
+        } catch (err) {
+          fail(TW.friendlyError(err));
+        } finally {
+          submitting = false;
+          TW.setLoading(btn, false);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

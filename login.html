@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Log in | Trick World</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="icons/tw-favicon.png">
+  <link rel="stylesheet" href="tw-auth.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="tw.js"></script>
+</head>
+<body>
+  <div class="auth">
+    <header class="auth-top">
+      <a class="brand" data-brand href="login.html" aria-label="Trick World"></a>
+      <div class="auth-alt"><span class="hide-sm">Don't have an account?</span><a class="btn btn-secondary btn-sm" href="signup.html">Sign up</a></div>
+    </header>
+
+    <main class="auth-main">
+      <div class="card auth-card">
+        <img class="auth-logo" src="icons/tw-logo.png" alt="Trick World">
+        <div class="card-head">
+          <h1>Log in to your account</h1>
+          <p>Enter your email and password to continue.</p>
+        </div>
+
+        <div id="notice" hidden></div>
+
+        <form id="form" novalidate>
+          <div class="field">
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" autocomplete="email" inputmode="email" required>
+          </div>
+          <div class="field">
+            <div class="label-row">
+              <label class="label" for="password">Password</label>
+              <a id="forgot" target="_blank" rel="noopener">Forgot password?</a>
+            </div>
+            <div class="pw">
+              <input id="password" name="password" type="password" autocomplete="current-password" required>
+              <button type="button" class="pw-toggle" aria-label="Show or hide password"></button>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-block" type="submit"><span>Log in</span></button>
+        </form>
+
+        <p class="secure-note"><span data-icon="shield" data-size="15"></span><span>An account can only be used on one device at a time. Logging in here logs you out everywhere else.</span></p>
+      </div>
+    </main>
+
+    <footer class="auth-foot">
+      <span>&copy; <span data-year></span> Trick World</span>
+      <a data-support>Need help? WhatsApp 0753 636 034</a>
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      TW.redirectIfSignedIn();
+
+      const noticeEl = document.getElementById("notice");
+      const form = document.getElementById("form");
+      const reason = new URLSearchParams(location.search).get("reason");
+      const messages = {
+        other_device: ["You were logged out because your account was opened on another device.", "warn"],
+        session_ended: ["You've been logged out. Please log in again.", "warn"],
+        confirmed: ["Your email is confirmed. You can log in now.", "ok"],
+      };
+      if (messages[reason]) TW.notice(noticeEl, messages[reason][0], messages[reason][1]);
+
+      document.getElementById("forgot").href = TW.waLink("Hello, I forgot my Trick World password. My email is: ");
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const btn = form.querySelector("button[type=submit]");
+        const email = form.elements.email.value.trim().toLowerCase();
+        const password = form.elements.password.value;
+        if (!email || !password) return TW.notice(noticeEl, "Enter your email and password.", "err");
+
+        TW.setLoading(btn, true);
+        try {
+          const { error } = await TW.sb.auth.signInWithPassword({ email, password });
+          if (error) throw error;
+          const st = await TW.claimSession();
+          TW.go(TW.routeFor(st));
+        } catch (err) {
+          TW.notice(noticeEl, TW.friendlyError(err), "err");
+          TW.setLoading(btn, false);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

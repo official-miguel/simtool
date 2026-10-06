@@ -1,0 +1,11 @@
+{
+  "verdict": "CHANGES_REQUESTED",
+  "findings": [
+    "Duplicate Supabase script tag — index.html head section contains `<script src=\"https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2\"></script>` twice. Remove one occurrence.",
+    "Admin redirect loop — When admin users access index.html, guard() with `need:'active'` redirects them to superadmin.html, potentially trapping them out of the main app. If admins should access the simtool, modify the guard logic in tw.js lines 80-88 to only redirect admins to superadmin when they explicitly navigate there, not on every page load.",
+    "Placeholder credentials block usage — config.js contains `YOUR_SUPABASE_URL` and `YOUR_SUPABASE_ANON_KEY` placeholders. Replace with real Supabase project credentials before testing or deployment.",
+    "Superadmin activate button deactivates users — When admin clicks \"Activate\" on an already-active user, toggleActive() calls tw_new_code first (which sets is_active=false), then sets is_active=true. This briefly deactivates the user and replaces their code unnecessarily. Modify toggleActive() to only call tw_new_code when activating an inactive user, not when deactivating.",
+    "One-device check fails open — When localStorage is cleared, guard() skips the session token check (tw.js line 60 checks `stored &&`), allowing the user to stay logged in until another device logs in. Change to fail-closed: if session_token exists in profiles but localStorage has no token, log out the user."
+  ],
+  "reviewDoc": "c:\\Users\\HomePC\\Desktop\\miguel\\simtool-main\\simtool-main\\.agents\\tasks\\2026-10-06-141437-review.md"
+}
